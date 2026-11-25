@@ -1,0 +1,1822 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>GRAVITY — Complete 6 Worlds Edition</title>
+  <style>
+    :root {
+      --bg: #050816;
+      --panel: rgba(12, 18, 42, 0.92);
+      --border: rgba(0, 240, 255, 0.35);
+      --cyan: #00f0ff;
+      --purple: #a855f7;
+      --pink: #ec4899;
+      --text: #e2e8f0;
+      --muted: #94a3b8;
+    }
+    * { box-sizing: border-box; user-select: none; -webkit-user-select: none; touch-action: manipulation; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: radial-gradient(circle at 20% 20%, #11193d 0%, #050816 60%, #02030a 100%);
+      color: var(--text);
+      font-family: system-ui, -apple-system, "Segoe UI", Tahoma, Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      overflow-x: hidden;
+    }
+    .app-shell {
+      width: 100%;
+      max-width: 1040px;
+      padding: 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      align-items: center;
+    }
+    .hud {
+      width: 100%;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 6px;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 8px 12px;
+      box-shadow: 0 0 20px rgba(0, 240, 255, 0.12);
+      font-size: 13px;
+    }
+    .hud-group { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+    .brand {
+      font-weight: 900;
+      letter-spacing: 2px;
+      font-size: 17px;
+      background: linear-gradient(90deg, var(--cyan), var(--purple));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .pill {
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 999px;
+      padding: 4px 9px;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-weight: 600;
+    }
+    .btn {
+      cursor: pointer;
+      border: 1px solid var(--border);
+      background: linear-gradient(135deg, rgba(0,240,255,0.15), rgba(168,85,247,0.18));
+      color: #fff;
+      border-radius: 10px;
+      padding: 7px 12px;
+      font-weight: 700;
+      font-size: 13px;
+      transition: transform 0.12s ease, box-shadow 0.15s ease;
+    }
+    .btn:hover { transform: translateY(-1px); box-shadow: 0 0 14px rgba(0,240,255,0.28); }
+    .btn:active { transform: scale(0.96); }
+    .btn:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
+    .btn-primary {
+      background: linear-gradient(135deg, #00c8ff, #9333ea);
+      border-color: rgba(255,255,255,0.35);
+      padding: 10px 20px;
+      font-size: 15px;
+    }
+    .btn-sm { padding: 5px 9px; font-size: 12px; }
+    .stage-wrap {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      background: #040713;
+      border: 2px solid rgba(0, 240, 255, 0.35);
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 0 36px rgba(0, 240, 255, 0.15), 0 0 60px rgba(168, 85, 247, 0.12);
+    }
+    canvas { width: 100%; height: 100%; display: block; }
+    .overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(5, 8, 22, 0.88);
+      backdrop-filter: blur(8px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 14px;
+      z-index: 10;
+    }
+    .overlay.hidden { display: none; }
+    .card {
+      width: 100%;
+      max-width: 780px;
+      max-height: 100%;
+      overflow-y: auto;
+      background: rgba(12, 18, 42, 0.97);
+      border: 1px solid rgba(0, 240, 255, 0.4);
+      border-radius: 18px;
+      padding: 18px;
+      text-align: center;
+      box-shadow: 0 0 35px rgba(0, 240, 255, 0.18);
+    }
+    .title-big {
+      margin: 0 0 4px;
+      font-size: clamp(26px, 5vw, 42px);
+      font-weight: 900;
+      letter-spacing: 4px;
+      background: linear-gradient(90deg, #00f0ff, #a855f7, #ec4899);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .subtitle { margin: 0 0 12px; color: var(--muted); font-size: 13px; }
+    .menu-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-top: 12px; }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(165px, 1fr));
+      gap: 9px;
+      margin-top: 10px;
+      text-align: start;
+    }
+    .item-card {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 12px;
+      padding: 10px;
+      cursor: pointer;
+      transition: border-color 0.15s, transform 0.12s, background 0.15s;
+    }
+    .item-card:hover { border-color: var(--cyan); transform: translateY(-2px); }
+    .item-card.active {
+      border-color: var(--cyan);
+      background: rgba(0, 240, 255, 0.12);
+      box-shadow: 0 0 16px rgba(0, 240, 255, 0.22);
+    }
+    .item-card.locked { opacity: 0.46; cursor: not-allowed; }
+    .char-dot {
+      display: inline-block;
+      width: 11px;
+      height: 11px;
+      border-radius: 50%;
+      margin-inline-end: 6px;
+    }
+    .controls-bar {
+      width: 100%;
+      direction: ltr;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      padding: 4px;
+    }
+    .controls-bar.hidden { display: none; }
+    .touch-cluster { display: flex; align-items: center; gap: 7px; }
+    .t-btn {
+      width: 46px;
+      height: 46px;
+      border-radius: 12px;
+      border: 1px solid rgba(0,240,255,0.45);
+      background: rgba(12, 20, 48, 0.88);
+      color: #fff;
+      font-size: 17px;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+    }
+    .t-btn:active, .t-btn.pressed { background: rgba(0, 240, 255, 0.35); transform: scale(0.94); }
+    .t-btn.wide { width: auto; padding: 0 12px; font-size: 13px; }
+    .grav-pad {
+      direction: ltr;
+      display: grid;
+      grid-template-columns: repeat(3, 40px);
+      grid-template-rows: repeat(3, 40px);
+      gap: 4px;
+    }
+    .grav-pad .t-btn { width: 40px; height: 40px; font-size: 15px; }
+    .hint-line { font-size: 12px; color: var(--muted); text-align: center; }
+    .section-title { font-size: 14px; color: var(--cyan); margin: 12px 0 4px; text-align: start; font-weight: 800; }
+    .toast {
+      position: absolute;
+      top: 12px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(16, 185, 129, 0.92);
+      color: #fff;
+      padding: 8px 16px;
+      border-radius: 999px;
+      font-weight: 800;
+      font-size: 13px;
+      box-shadow: 0 0 20px rgba(16, 185, 129, 0.45);
+      z-index: 20;
+      pointer-events: none;
+    }
+    .toast.hidden { display: none; }
+    @media (max-width: 720px) {
+      .hud { padding: 6px 8px; font-size: 11px; }
+      .t-btn { width: 42px; height: 42px; }
+      .grav-pad { grid-template-columns: repeat(3, 36px); grid-template-rows: repeat(3, 36px); }
+      .grav-pad .t-btn { width: 36px; height: 36px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app-shell">
+    <div class="hud">
+      <div class="hud-group">
+        <span class="brand">GRAVITY</span>
+        <span class="pill" id="hudLevel">World 1 - 01</span>
+        <span class="pill" id="hudCrystals">💎 0/3</span>
+        <span class="pill" id="hudBank">🏦 0</span>
+        <span class="pill" id="hudTimer">⏱ 0.0s</span>
+        <span class="pill" id="hudGrav">⬇</span>
+      </div>
+      <div class="hud-group">
+        <button class="btn btn-sm" id="btnRestart" title="R">↻ إعادة</button>
+        <button class="btn btn-sm" id="btnTouchToggle">📱 اللمس</button>
+        <button class="btn btn-sm" id="btnMusic">🎵 موسيقى</button>
+        <button class="btn btn-sm" id="btnSound">🔊 الصوت</button>
+        <button class="btn btn-sm" id="btnLang">EN</button>
+        <button class="btn btn-sm" id="btnMenu">☰ القائمة</button>
+      </div>
+    </div>
+
+    <div class="stage-wrap">
+      <canvas id="gameCanvas" width="960" height="540"></canvas>
+      <div class="toast hidden" id="toast"></div>
+      <div class="overlay" id="overlay">
+        <div class="card" id="overlayCard"></div>
+      </div>
+    </div>
+
+    <div class="controls-bar" id="touchBar">
+      <div class="touch-cluster">
+        <button class="t-btn" data-hold="left">◀</button>
+        <button class="t-btn" data-hold="right">▶</button>
+        <button class="t-btn wide" data-tap="jump" id="tJump">قفز</button>
+        <button class="t-btn wide" data-tap="ability" id="tAbility" style="border-color:#a855f7;">⚡ قدرة</button>
+      </div>
+      <div class="touch-cluster">
+        <div class="grav-pad">
+          <div></div>
+          <button class="t-btn" data-grav="up">▲</button>
+          <div></div>
+          <button class="t-btn" data-grav="left">◀</button>
+          <div style="display:flex;align-items:center;justify-content:center;font-size:11px;color:#00f0ff;font-weight:700;">G</div>
+          <button class="t-btn" data-grav="right">▶</button>
+          <div></div>
+          <button class="t-btn" data-grav="down">▼</button>
+          <div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="hint-line" id="hintLine">
+      الكمبيوتر: [A / D] أو [W / S] للحركة • [الأسهم ↑ ↓ ← →] لتغيير الجاذبية • [Space] للقفز • [E] للقدرة الخاصة • [R] لإعادة المرحلة
+    </div>
+  </div>
+
+<script>
+(() => {
+  "use strict";
+
+  const canvas = document.getElementById("gameCanvas");
+  const ctx = canvas.getContext("2d");
+  const W = 960, H = 540;
+  const overlay = document.getElementById("overlay");
+  const overlayCard = document.getElementById("overlayCard");
+  const touchBar = document.getElementById("touchBar");
+  const toastEl = document.getElementById("toast");
+
+  let lang = localStorage.getItem("gravity_lang") || "ar";
+  const I18N = {
+    ar: {
+      subtitle: "6 عوالم • 18 مرحلة + تحدي يومي • زعيمان • 5 شخصيات • متجر وإنجازات",
+      play: "▶ العب الآن",
+      worlds: "🌌 العوالم الـ 6",
+      daily: "📅 التحدي اليومي",
+      chars: "🤖 الشخصيات",
+      shop: "🛒 المتجر",
+      ach: "🏆 الإنجازات",
+      story: "📖 القصة",
+      how: "❔ التحكم",
+      restart: "↻ إعادة",
+      touch: "📱 اللمس",
+      musicOn: "🎵 موسيقى",
+      musicOff: "🔇 موسيقى",
+      soundOn: "🔊 الصوت",
+      soundOff: "🔇 صامت",
+      menu: "☰ القائمة",
+      jump: "قفز",
+      ability: "⚡ قدرة",
+      hint: "الكمبيوتر: [A / D] أو [W / S] للحركة • [الأسهم ↑ ↓ ← →] لتغيير الجاذبية • [Space] للقفز • [E] للقدرة الخاصة • [R] لإعادة المرحلة",
+      back: "← رجوع",
+      selectChar: "اختر شخصيتك",
+      selectWorld: "العوالم الـ 6 والمراحل",
+      shopTitle: "المتجر وتطوير القدرات",
+      achTitle: "الإنجازات",
+      winTitle: "✨ تم اجتياز المرحلة!",
+      nextLevel: "المرحلة التالية ▶",
+      replay: "↻ إعادة اللعب",
+      allDone: "🎉 مبروك! هزمت VOID GUARDIAN وأعدت توازن قلب الجاذبية في جميع العوالم الـ 6!",
+      dailyDoneMsg: "🎁 مكافأة التحدي اليومي: +5 💎 (تم إضافتها لرصيدك!)",
+      dailyPlayedMsg: "✅ أكملت تحدي اليوم بالفعل! يمكنك إعادة لعبه للتدريب.",
+      storyTitle: "قصة GRAVITY: استعادة قلب الجاذبية",
+      storyBody: `
+        <p style="line-height:1.85;color:#cbd5e1;text-align:start;">
+          في المستقبل البعيد، انهار <b>قلب الجاذبية</b> فانقسم الكون إلى 6 عوالم منفصلة: <b>NEON STATION</b>، <b>CRYSTAL PLANET</b>، <b>GRAVITY OCEAN</b>، <b>DARK MATTER</b>، <b>MECHANICAL CORE</b>، وصولاً إلى <b>THE VOID</b>.<br><br>
+          مهمتك هي جمع الشظايا والبلورات وهزيمة حراس النواة والفراغ لإعادة القوانين الفيزيائية إلى الكون!
+        </p>`,
+      howTitle: "التحكم وقواعد اللعب",
+      howBody: `
+        <p style="line-height:1.8;color:#cbd5e1;text-align:start;">
+          • <b>تغيير الجاذبية:</b> الأسهم <b>(↑ ↓ ← →)</b> أو أزرار <b>G</b>.<br>
+          • <b>الحركة والقفز:</b> <b>A / D</b> (أو <b>W / S</b> على الجدران) + <b>Space</b> للقفز + <b>E</b> للقدرة الخاصة.<br>
+          • <b>الأعداء والزعماء:</b> تجنّب الألغام والروبوتات والتروس الدوارة وطلقات الأبراج، واضرب الزعماء بالكرات الفيزيائية عبر تغيير الجاذبية!
+        </p>`,
+      locked: "🔒 مغلقة",
+      ready: "جاهزة",
+      best: "أفضل وقت",
+      bank: "رصيد البلورات",
+      upgrades: "تطوير القدرات",
+      skins: "مظاهر الألوان",
+      buy: "شراء",
+      equipped: "مُفعّل",
+      equip: "تفعيل",
+      maxed: "الحد الأقصى",
+      bossHint: "🎯 وجّه الكرات الفيزيائية لتضرب الزعيم!",
+      unlockedToast: "🏆 إنجاز جديد: "
+    },
+    en: {
+      subtitle: "6 Worlds • 18 Levels + Daily Challenge • 2 Bosses • 5 Heroes • Shop & Achievements",
+      play: "▶ Play Now",
+      worlds: "🌌 6 Worlds",
+      daily: "📅 Daily Challenge",
+      chars: "🤖 Characters",
+      shop: "🛒 Shop",
+      ach: "🏆 Achievements",
+      story: "📖 Story",
+      how: "❔ Controls",
+      restart: "↻ Restart",
+      touch: "📱 Touch",
+      musicOn: "🎵 Music",
+      musicOff: "🔇 Music",
+      soundOn: "🔊 Sound",
+      soundOff: "🔇 Muted",
+      menu: "☰ Menu",
+      jump: "Jump",
+      ability: "⚡ Ability",
+      hint: "PC: [A/D] or [W/S] Move • [Arrow Keys ↑↓←→] Shift Gravity • [Space] Jump • [E] Ability • [R] Restart",
+      back: "← Back",
+      selectChar: "Choose Your Character",
+      selectWorld: "All 6 Worlds & Levels",
+      shopTitle: "Shop & Skill Upgrades",
+      achTitle: "Achievements",
+      winTitle: "✨ Level Complete!",
+      nextLevel: "Next Level ▶",
+      replay: "↻ Replay",
+      allDone: "🎉 Victory! You defeated VOID GUARDIAN and restored the Gravity Core across all 6 Worlds!",
+      dailyDoneMsg: "🎁 Daily Challenge Reward: +5 💎 added to your bank!",
+      dailyPlayedMsg: "✅ Today's Daily Challenge already claimed! Replay anytime for practice.",
+      storyTitle: "Story: Restoring the Gravity Core",
+      storyBody: `
+        <p style="line-height:1.85;color:#cbd5e1;text-align:start;">
+          In the distant future, the <b>Gravity Core</b> shattered, splitting the cosmos into 6 worlds: <b>NEON STATION</b>, <b>CRYSTAL PLANET</b>, <b>GRAVITY OCEAN</b>, <b>DARK MATTER</b>, <b>MECHANICAL CORE</b>, and <b>THE VOID</b>.<br><br>
+          Recover the crystals and defeat the Guardians to restore physics!
+        </p>`,
+      howTitle: "Controls & Mechanics",
+      howBody: `
+        <p style="line-height:1.8;color:#cbd5e1;text-align:start;">
+          • <b>Shift Gravity:</b> <b>Arrow Keys (↑ ↓ ← →)</b> or the <b>G</b> pad.<br>
+          • <b>Move & Jump:</b> <b>A / D</b> (or <b>W / S</b> on walls) + <b>Space</b> Jump + <b>E</b> Special Ability.<br>
+          • <b>Bosses & Hazards:</b> Dodge mines, drones, gears & turrets. Slam Physics Orbs into Bosses using gravity!
+        </p>`,
+      locked: "🔒 Locked",
+      ready: "Ready",
+      best: "Best",
+      bank: "Crystal Bank",
+      upgrades: "Skill Upgrades",
+      skins: "Color Skins",
+      buy: "Buy",
+      equipped: "Equipped",
+      equip: "Equip",
+      maxed: "MAX",
+      bossHint: "🎯 Slam Physics Orbs into the Boss!",
+      unlockedToast: "🏆 Achievement Unlocked: "
+    }
+  };
+  const t = (k) => I18N[lang][k] || k;
+
+  let audioCtx = null;
+  let muted = localStorage.getItem("gravity_muted") === "1";
+  let musicOn = localStorage.getItem("gravity_music") !== "0";
+  let musicStep = 0;
+
+  function ensureAudio() {
+    if (!audioCtx) {
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if (AC) audioCtx = new AC();
+    }
+    if (audioCtx && audioCtx.state === "suspended") audioCtx.resume();
+  }
+
+  function playTone(freq, endFreq, dur, type = "sine", vol = 0.12) {
+    if (muted) return;
+    ensureAudio();
+    if (!audioCtx) return;
+    const now = audioCtx.currentTime;
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = type;
+    osc.frequency.setValueAtTime(freq, now);
+    osc.frequency.exponentialRampToValueAtTime(Math.max(20, endFreq), now + dur);
+    gain.gain.setValueAtTime(vol, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + dur);
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.start(now);
+    osc.stop(now + dur);
+  }
+
+  const WORLD_SCALES = {
+    1: [220, 261.6, 329.6, 392, 440, 392, 329.6, 293.6],
+    2: [246.9, 293.6, 370, 440, 493.8, 440, 370, 329.6],
+    3: [196, 233.1, 293.6, 349.2, 392, 349.2, 293.6, 261.6],
+    4: [185, 220, 277.2, 329.6, 370, 329.6, 246.9, 207.6],
+    5: [220, 246.9, 293.6, 329.6, 392, 329.6, 293.6, 246.9],
+    6: [164.8, 196, 246.9, 311.1, 329.6, 293.6, 246.9, 196]
+  };
+  setInterval(() => {
+    if (!playing || muted || !musicOn || !audioCtx || audioCtx.state !== "running" || !levelState) return;
+    const scale = WORLD_SCALES[levelState.def.world] || WORLD_SCALES[1];
+    const note = scale[musicStep % scale.length];
+    musicStep++;
+    const now = audioCtx.currentTime;
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = levelState.def.world >= 4 ? "triangle" : "sine";
+    osc.frequency.setValueAtTime(note, now);
+    gain.gain.setValueAtTime(0.03, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.24);
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.start(now);
+    osc.stop(now + 0.25);
+  }, 270);
+
+  const SFX = {
+    grav: () => playTone(220, 520, 0.14, "triangle", 0.13),
+    jump: () => playTone(300, 620, 0.11, "sine", 0.11),
+    crystal: () => playTone(660, 1180, 0.14, "sine", 0.13),
+    switch: () => playTone(400, 880, 0.2, "square", 0.08),
+    tp: () => playTone(880, 320, 0.18, "sine", 0.12),
+    crack: () => playTone(240, 120, 0.12, "square", 0.07),
+    ability: () => playTone(520, 240, 0.18, "sawtooth", 0.09),
+    bossHit: () => playTone(160, 420, 0.26, "sawtooth", 0.15),
+    hit: () => playTone(180, 45, 0.24, "sawtooth", 0.16),
+    win: () => {
+      playTone(523, 659, 0.12, "triangle", 0.12);
+      setTimeout(() => playTone(659, 988, 0.22, "triangle", 0.14), 110);
+    }
+  };
+
+  const WORLDS = [
+    { id: 1, nameAr: "1: NEON STATION", nameEn: "1: NEON STATION", bg: "#050816", grid: "rgba(0,240,255,0.06)", platGlow: "#00f0ff", platFill: "#111c3a" },
+    { id: 2, nameAr: "2: CRYSTAL PLANET", nameEn: "2: CRYSTAL PLANET", bg: "#120624", grid: "rgba(168,85,247,0.08)", platGlow: "#c084fc", platFill: "#241046" },
+    { id: 3, nameAr: "3: GRAVITY OCEAN", nameEn: "3: GRAVITY OCEAN", bg: "#041626", grid: "rgba(45,212,191,0.07)", platGlow: "#2dd4bf", platFill: "#0b2a3d" },
+    { id: 4, nameAr: "4: DARK MATTER", nameEn: "4: DARK MATTER", bg: "#090314", grid: "rgba(217,70,239,0.07)", platGlow: "#e879f9", platFill: "#1e0936" },
+    { id: 5, nameAr: "5: MECHANICAL CORE", nameEn: "5: MECHANICAL CORE", bg: "#120e07", grid: "rgba(245,158,11,0.07)", platGlow: "#fbbf24", platFill: "#2b200d" },
+    { id: 6, nameAr: "6: THE VOID", nameEn: "6: THE VOID", bg: "#04020a", grid: "rgba(244,63,94,0.08)", platGlow: "#fb7185", platFill: "#1d0718" }
+  ];
+
+  const CHARACTERS = [
+    { id: "nova", name: "NOVA", color: "#00f0ff", accent: "#a855f7", speed: 255, jump: 430, cooldown: 3.0, doubleJump: false,
+      descAr: "متوازنة • موجة جاذبية تدفع الكرات وتُعطّل الألغام والروبوتات", descEn: "Balanced • Gravity Blast pushes orbs & stuns mines/drones" },
+    { id: "zen", name: "ZEN", color: "#22d3ee", accent: "#34d399", speed: 300, jump: 470, cooldown: 2.4, doubleJump: true,
+      descAr: "سريعة وقفز مزدوج • دفعة هوائية سريعة", descEn: "Fast + Double Jump • Quick Air Boost ability" },
+    { id: "orbit", name: "ORBIT", color: "#a855f7", accent: "#00f0ff", speed: 245, jump: 425, cooldown: 3.5, doubleJump: false,
+      descAr: "مجال دائري يجذب البلورات ويبعد الألغام", descEn: "Orbit Field attracts crystals & repels mines" },
+    { id: "pulse", name: "PULSE", color: "#ec4899", accent: "#f472b6", speed: 265, jump: 430, cooldown: 2.2, doubleJump: false,
+      descAr: "اندفاع فائق يخترق المخاطر بأمان لحظي", descEn: "Hyper Dash bursts forward with brief shield" },
+    { id: "vector", name: "VECTOR", color: "#38bdf8", accent: "#facc15", speed: 250, jump: 435, cooldown: 3.0, doubleJump: false,
+      descAr: "عكس فوري للجاذبية مع درع حماية لمدة ثانيتين", descEn: "Instant Gravity Flip + 2s Energy Shield" }
+  ];
+
+  const SKINS = [
+    { id: "default", nameAr: "الافتراضي", nameEn: "Classic Neon", cost: 0, color: null, accent: null },
+    { id: "gold", nameAr: "النيون الذهبي", nameEn: "Solar Gold", cost: 4, color: "#facc15", accent: "#ffffff" },
+    { id: "crimson", nameAr: "الطيف القرمزي", nameEn: "Cyber Crimson", cost: 6, color: "#fb7185", accent: "#00f0ff" },
+    { id: "emerald", nameAr: "الماتريكس الأخضر", nameEn: "Emerald Core", cost: 8, color: "#34d399", accent: "#facc15" }
+  ];
+
+  const ACHIEVEMENTS = [
+    { id: "first_crystal", nameAr: "أول شظية", nameEn: "First Crystal", descAr: "اجمع أول بلورة", descEn: "Collect your first crystal" },
+    { id: "neon_clear", nameAr: "ناجي المحطة", nameEn: "Station Survivor", descAr: "أكمل العالم 1", descEn: "Clear World 1" },
+    { id: "crystal_clear", nameAr: "كاشف البلورات", nameEn: "Crystal Explorer", descAr: "أكمل العالم 2", descEn: "Clear World 2" },
+    { id: "boss_slayer", nameAr: "قاهر الحارس", nameEn: "Sentinel Slayer", descAr: "اهزم CORE SENTINEL", descEn: "Defeat CORE SENTINEL" },
+    { id: "dark_master", nameAr: "سيد الظلال", nameEn: "Shadow Master", descAr: "أكمل العالم 4", descEn: "Clear World 4" },
+    { id: "mech_master", nameAr: "مهندس النواة", nameEn: "Core Engineer", descAr: "أكمل العالم 5", descEn: "Clear World 5" },
+    { id: "void_hero", nameAr: "بطل قلب الجاذبية", nameEn: "Gravity Savior", descAr: "اهزم VOID GUARDIAN", descEn: "Defeat VOID GUARDIAN" },
+    { id: "upgrader", nameAr: "تطوير مستمر", nameEn: "Upgrader", descAr: "اشترِ ترقية أو مظهراً", descEn: "Buy an upgrade or skin" },
+    { id: "speedrunner", nameAr: "الوميض السريع", nameEn: "Speedrunner", descAr: "أنهِ مرحلة بأقل من 12 ثانية", descEn: "Finish any level under 12s" }
+  ];
+
+  const OUTER_WALLS = [
+    { x: 0, y: 0, w: W, h: 24 },
+    { x: 0, y: H - 24, w: W, h: 24 },
+    { x: 0, y: 0, w: 24, h: H },
+    { x: W - 24, y: 0, w: 24, h: H }
+  ];
+
+  const emptyExtras = { fragile: [], moving: [], zones: [], teleporters: [], orbs: [], switches: [], gates: [], drones: [], turrets: [], gears: [], mines: [] };
+  const mkLvl = (obj) => ({ ...emptyExtras, ...obj });
+
+  const LEVELS = [
+    mkLvl({
+      id: 1, world: 1, nameAr: "01: إيقاظ القلب", nameEn: "01: Core Awakening",
+      spawn: { x: 64, y: 460 }, portal: { x: 870, y: 462 },
+      platforms: [
+        { x: 24, y: 340, w: 260, h: 24 }, { x: 380, y: 24, w: 24, h: 320 },
+        { x: 520, y: 180, w: 260, h: 24 }, { x: 680, y: 360, w: 256, h: 24 }
+      ],
+      crystals: [{ x: 165, y: 472 }, { x: 165, y: 80 }, { x: 645, y: 120 }],
+      mines: [{ x: 470, y: 468, r: 16 }]
+    }),
+    mkLvl({
+      id: 2, world: 1, nameAr: "02: لغز الكرة والليزر", nameEn: "02: Orb & Laser Gate",
+      spawn: { x: 68, y: 460 }, portal: { x: 845, y: 458 },
+      platforms: [{ x: 220, y: 160, w: 300, h: 24 }, { x: 520, y: 24, w: 24, h: 160 }, { x: 330, y: 370, w: 24, h: 146 }],
+      orbs: [{ x: 160, y: 465, r: 18 }],
+      switches: [{ id: "sw1", x: 446, y: 146, w: 68, h: 14, targetGate: "g1" }],
+      gates: [{ id: "g1", x: 680, y: 24, w: 20, h: 492 }],
+      crystals: [{ x: 160, y: 85 }, { x: 475, y: 85 }, { x: 540, y: 465 }],
+      mines: [{ x: 460, y: 320, r: 16 }, { x: 760, y: 260, r: 16 }]
+    }),
+    mkLvl({
+      id: 3, world: 1, nameAr: "03: حقل الجاذبية المتحرك", nameEn: "03: Moving Gravity Field",
+      spawn: { x: 65, y: 460 }, portal: { x: 870, y: 90 },
+      platforms: [{ x: 24, y: 260, w: 220, h: 24 }, { x: 380, y: 360, w: 24, h: 156 }, { x: 540, y: 160, w: 24, h: 220 }, { x: 720, y: 150, w: 216, h: 24 }],
+      moving: [{ x: 260, y: 160, w: 110, h: 20, ax: 260, ay: 160, bx: 410, by: 160, speed: 95 }],
+      zones: [{ x: 575, y: 200, w: 135, h: 290, dir: "up" }],
+      orbs: [{ x: 180, y: 465, r: 18 }],
+      switches: [{ id: "sw2", x: 100, y: 246, w: 64, h: 14, targetGate: "g2" }],
+      gates: [{ id: "g2", x: 720, y: 24, w: 18, h: 126 }],
+      crystals: [{ x: 340, y: 95 }, { x: 642, y: 350 }, { x: 840, y: 460 }],
+      mines: [{ x: 465, y: 460, r: 16 }, { x: 642, y: 120, r: 16 }]
+    }),
+    mkLvl({
+      id: 4, world: 2, nameAr: "04: المنصات الزجاجية", nameEn: "04: Crystal Glass",
+      spawn: { x: 64, y: 460 }, portal: { x: 870, y: 90 },
+      platforms: [{ x: 24, y: 350, w: 180, h: 22 }, { x: 420, y: 24, w: 24, h: 340 }, { x: 720, y: 150, w: 216, h: 22 }],
+      fragile: [{ x: 230, y: 300, w: 120, h: 18 }, { x: 230, y: 140, w: 120, h: 18 }],
+      teleporters: [{ ax: 110, ay: 90, bx: 560, by: 450, color: "#f472b6" }],
+      crystals: [{ x: 290, y: 255 }, { x: 290, y: 95 }, { x: 640, y: 310 }],
+      mines: [{ x: 620, y: 190, r: 16 }]
+    }),
+    mkLvl({
+      id: 5, world: 2, nameAr: "05: بوابات التناظر", nameEn: "05: Warp Symmetry",
+      spawn: { x: 65, y: 460 }, portal: { x: 870, y: 460 },
+      platforms: [{ x: 320, y: 24, w: 24, h: 330 }, { x: 600, y: 180, w: 24, h: 336 }, { x: 344, y: 260, w: 180, h: 22 }],
+      fragile: [{ x: 140, y: 220, w: 110, h: 18 }],
+      teleporters: [{ ax: 260, ay: 90, bx: 430, by: 200, color: "#00f0ff" }],
+      orbs: [{ x: 180, y: 465, r: 18 }],
+      switches: [{ id: "sw5", x: 400, y: 246, w: 70, h: 14, targetGate: "g5" }],
+      gates: [{ id: "g5", x: 600, y: 24, w: 24, h: 156 }],
+      drones: [{ x: 720, y: 460, ax: 660, ay: 460, bx: 810, by: 460, speed: 95, r: 16 }],
+      crystals: [{ x: 195, y: 175 }, { x: 450, y: 95 }, { x: 760, y: 220 }]
+    }),
+    mkLvl({
+      id: 6, world: 2, nameAr: "06: قلب الكريستال", nameEn: "06: Crystal Heart",
+      spawn: { x: 65, y: 90 }, portal: { x: 870, y: 460 },
+      platforms: [{ x: 24, y: 140, w: 180, h: 22 }, { x: 460, y: 24, w: 24, h: 300 }, { x: 740, y: 380, w: 196, h: 22 }],
+      fragile: [{ x: 250, y: 240, w: 130, h: 18 }, { x: 560, y: 160, w: 130, h: 18 }],
+      moving: [{ x: 260, y: 440, w: 120, h: 20, ax: 220, ay: 440, bx: 480, by: 440, speed: 110 }],
+      zones: [{ x: 520, y: 240, w: 160, h: 240, dir: "right" }],
+      drones: [{ x: 640, y: 90, ax: 520, ay: 90, bx: 850, by: 90, speed: 120, r: 16 }],
+      crystals: [{ x: 315, y: 190 }, { x: 600, y: 360 }, { x: 830, y: 330 }],
+      mines: [{ x: 120, y: 460, r: 16 }]
+    }),
+    mkLvl({
+      id: 7, world: 3, nameAr: "07: تيارات الأعماق", nameEn: "07: Deep Currents",
+      spawn: { x: 65, y: 460 }, portal: { x: 870, y: 90 },
+      platforms: [{ x: 240, y: 200, w: 24, h: 316 }, { x: 500, y: 24, w: 24, h: 310 }, { x: 740, y: 150, w: 196, h: 22 }],
+      zones: [{ x: 50, y: 80, w: 160, h: 320, dir: "up" }, { x: 290, y: 40, w: 180, h: 140, dir: "right" }, { x: 550, y: 260, w: 160, h: 220, dir: "up" }],
+      drones: [{ x: 370, y: 360, ax: 290, ay: 360, bx: 470, by: 360, speed: 100, r: 16 }, { x: 780, y: 330, ax: 750, ay: 330, bx: 890, by: 330, speed: 110, r: 16 }],
+      crystals: [{ x: 130, y: 120 }, { x: 380, y: 460 }, { x: 630, y: 110 }]
+    }),
+    mkLvl({
+      id: 8, world: 3, nameAr: "08: اللؤلؤة والضغط", nameEn: "08: Abyssal Pressure",
+      spawn: { x: 65, y: 90 }, portal: { x: 870, y: 455 },
+      platforms: [{ x: 24, y: 150, w: 200, h: 22 }, { x: 360, y: 24, w: 24, h: 340 }, { x: 640, y: 180, w: 24, h: 336 }, { x: 384, y: 364, w: 256, h: 22 }],
+      fragile: [{ x: 450, y: 180, w: 130, h: 18 }],
+      teleporters: [{ ax: 140, ay: 455, bx: 510, by: 90, color: "#2dd4bf" }],
+      orbs: [{ x: 140, y: 95, r: 18 }],
+      switches: [{ id: "sw8", x: 475, y: 350, w: 70, h: 14, targetGate: "g8" }],
+      gates: [{ id: "g8", x: 640, y: 24, w: 24, h: 156 }],
+      drones: [{ x: 780, y: 300, ax: 700, ay: 300, bx: 890, by: 300, speed: 125, r: 16 }],
+      crystals: [{ x: 270, y: 270 }, { x: 510, y: 280 }, { x: 790, y: 120 }]
+    }),
+    mkLvl({
+      id: 9, world: 3, nameAr: "09: الزعيم CORE SENTINEL", nameEn: "09: BOSS — CORE SENTINEL",
+      spawn: { x: 80, y: 460 }, portal: { x: 480, y: 270 },
+      platforms: [{ x: 140, y: 360, w: 160, h: 20 }, { x: 660, y: 360, w: 160, h: 20 }, { x: 140, y: 160, w: 160, h: 20 }, { x: 660, y: 160, w: 160, h: 20 }],
+      orbs: [{ x: 220, y: 465, r: 18 }, { x: 740, y: 465, r: 18 }],
+      boss: { name: "CORE SENTINEL", x: 480, y: 260, r: 34, hp: 3, maxHp: 3, final: false },
+      crystals: [{ x: 220, y: 110 }, { x: 740, y: 110 }, { x: 480, y: 465 }]
+    }),
+    mkLvl({
+      id: 10, world: 4, nameAr: "10: ظلال المادة المظلمة", nameEn: "10: Dark Shadows",
+      spawn: { x: 64, y: 460 }, portal: { x: 870, y: 90 },
+      platforms: [{ x: 24, y: 340, w: 220, h: 22 }, { x: 380, y: 24, w: 24, h: 320 }, { x: 540, y: 180, w: 24, h: 336 }, { x: 700, y: 150, w: 236, h: 22 }],
+      zones: [{ x: 270, y: 180, w: 90, h: 280, dir: "up" }, { x: 420, y: 40, w: 100, h: 140, dir: "right" }],
+      turrets: [{ x: 680, y: 495, rate: 2.6 }],
+      mines: [{ x: 620, y: 320, r: 16 }],
+      crystals: [{ x: 130, y: 290 }, { x: 460, y: 110 }, { x: 820, y: 450 }]
+    }),
+    mkLvl({
+      id: 11, world: 4, nameAr: "11: الصدع العكسي", nameEn: "11: Reverse Rift",
+      spawn: { x: 65, y: 460 }, portal: { x: 870, y: 460 },
+      platforms: [{ x: 300, y: 24, w: 24, h: 320 }, { x: 620, y: 180, w: 24, h: 336 }, { x: 324, y: 270, w: 200, h: 22 }],
+      teleporters: [{ ax: 180, ay: 90, bx: 430, by: 190, color: "#d946ef" }],
+      orbs: [{ x: 160, y: 465, r: 18 }],
+      switches: [{ id: "sw11", x: 380, y: 256, w: 70, h: 14, targetGate: "g11" }],
+      gates: [{ id: "g11", x: 620, y: 24, w: 24, h: 156 }],
+      turrets: [{ x: 780, y: 45, rate: 2.5 }],
+      crystals: [{ x: 180, y: 220 }, { x: 470, y: 90 }, { x: 780, y: 260 }]
+    }),
+    mkLvl({
+      id: 12, world: 4, nameAr: "12: متاهة الظلام", nameEn: "12: Shadow Labyrinth",
+      spawn: { x: 65, y: 90 }, portal: { x: 870, y: 90 },
+      platforms: [{ x: 24, y: 150, w: 180, h: 22 }, { x: 280, y: 150, w: 24, h: 366 }, { x: 560, y: 24, w: 24, h: 340 }, { x: 740, y: 150, w: 196, h: 22 }],
+      fragile: [{ x: 340, y: 320, w: 140, h: 18 }],
+      moving: [{ x: 360, y: 120, w: 120, h: 20, ax: 320, ay: 120, bx: 450, by: 120, speed: 95 }],
+      turrets: [{ x: 190, y: 495, rate: 2.7 }],
+      drones: [{ x: 680, y: 360, ax: 620, ay: 360, bx: 880, by: 360, speed: 115, r: 16 }],
+      crystals: [{ x: 140, y: 450 }, { x: 410, y: 265 }, { x: 820, y: 450 }]
+    }),
+    mkLvl({
+      id: 13, world: 5, nameAr: "13: التروس الدوارة", nameEn: "13: Spinning Gears",
+      spawn: { x: 64, y: 460 }, portal: { x: 870, y: 460 },
+      platforms: [{ x: 24, y: 310, w: 240, h: 22 }, { x: 380, y: 24, w: 24, h: 310 }, { x: 600, y: 200, w: 24, h: 316 }, { x: 624, y: 200, w: 160, h: 22 }],
+      moving: [{ x: 420, y: 340, w: 120, h: 20, ax: 420, ay: 340, bx: 420, by: 160, speed: 95 }],
+      gears: [{ x: 260, y: 460, r: 22 }, { x: 500, y: 100, r: 24 }, { x: 760, y: 360, r: 22 }],
+      crystals: [{ x: 140, y: 260 }, { x: 500, y: 240 }, { x: 700, y: 150 }]
+    }),
+    mkLvl({
+      id: 14, world: 5, nameAr: "14: مكابس النواة", nameEn: "14: Core Pistons",
+      spawn: { x: 65, y: 90 }, portal: { x: 870, y: 90 },
+      platforms: [{ x: 24, y: 150, w: 180, h: 22 }, { x: 320, y: 24, w: 24, h: 330 }, { x: 620, y: 180, w: 24, h: 336 }, { x: 740, y: 150, w: 196, h: 22 }],
+      moving: [
+        { x: 180, y: 360, w: 110, h: 22, ax: 60, ay: 360, bx: 200, by: 360, speed: 110 },
+        { x: 420, y: 150, w: 120, h: 22, ax: 360, ay: 150, bx: 490, by: 150, speed: 115 }
+      ],
+      orbs: [{ x: 150, y: 465, r: 18 }],
+      teleporters: [{ ax: 260, ay: 90, bx: 470, by: 450, color: "#f59e0b" }],
+      switches: [{ id: "sw14", x: 520, y: 502, w: 70, h: 14, targetGate: "g14" }],
+      gates: [{ id: "g14", x: 620, y: 24, w: 24, h: 156 }],
+      gears: [{ x: 470, y: 280, r: 22 }],
+      crystals: [{ x: 120, y: 310 }, { x: 470, y: 90 }, { x: 780, y: 450 }]
+    }),
+    mkLvl({
+      id: 15, world: 5, nameAr: "15: قلب الآلة", nameEn: "15: Machine Heart",
+      spawn: { x: 65, y: 460 }, portal: { x: 870, y: 270 },
+      platforms: [{ x: 240, y: 24, w: 24, h: 310 }, { x: 480, y: 180, w: 24, h: 336 }, { x: 720, y: 24, w: 24, h: 210 }, { x: 720, y: 330, w: 24, h: 186 }],
+      fragile: [{ x: 310, y: 240, w: 110, h: 18 }, { x: 560, y: 270, w: 110, h: 18 }],
+      gears: [{ x: 150, y: 160, r: 24 }, { x: 360, y: 440, r: 22 }, { x: 600, y: 120, r: 22 }],
+      turrets: [{ x: 890, y: 490, rate: 2.5 }],
+      crystals: [{ x: 130, y: 90 }, { x: 365, y: 190 }, { x: 615, y: 220 }]
+    }),
+    mkLvl({
+      id: 16, world: 6, nameAr: "16: شقوق الفراغ", nameEn: "16: Void Cracks",
+      spawn: { x: 65, y: 460 }, portal: { x: 870, y: 90 },
+      platforms: [{ x: 24, y: 320, w: 200, h: 22 }, { x: 340, y: 24, w: 24, h: 320 }, { x: 620, y: 180, w: 24, h: 336 }, { x: 740, y: 150, w: 196, h: 22 }],
+      fragile: [{ x: 230, y: 160, w: 95, h: 18 }, { x: 440, y: 320, w: 120, h: 18 }],
+      teleporters: [{ ax: 120, ay: 90, bx: 490, by: 450, color: "#00f0ff" }],
+      zones: [{ x: 660, y: 220, w: 180, h: 260, dir: "up" }],
+      turrets: [{ x: 590, y: 45, rate: 2.4 }],
+      drones: [{ x: 780, y: 450, ax: 680, ay: 450, bx: 890, by: 450, speed: 130, r: 16 }],
+      crystals: [{ x: 120, y: 260 }, { x: 500, y: 260 }, { x: 830, y: 320 }]
+    }),
+    mkLvl({
+      id: 17, world: 6, nameAr: "17: اختبار الجاذبية الأخير", nameEn: "17: Final Gravity Trial",
+      spawn: { x: 65, y: 90 }, portal: { x: 870, y: 460 },
+      platforms: [{ x: 24, y: 150, w: 180, h: 22 }, { x: 300, y: 160, w: 24, h: 356 }, { x: 580, y: 24, w: 24, h: 340 }, { x: 324, y: 360, w: 180, h: 22 }],
+      moving: [{ x: 340, y: 130, w: 110, h: 20, ax: 340, ay: 130, bx: 450, by: 130, speed: 120 }],
+      orbs: [{ x: 150, y: 465, r: 18 }],
+      teleporters: [{ ax: 240, ay: 465, bx: 440, by: 260, color: "#f43f5e" }],
+      switches: [{ id: "sw17", x: 380, y: 346, w: 70, h: 14, targetGate: "g17" }],
+      gates: [{ id: "g17", x: 580, y: 364, w: 24, h: 152 }],
+      gears: [{ x: 160, y: 300, r: 22 }, { x: 760, y: 200, r: 24 }],
+      turrets: [{ x: 890, y: 45, rate: 2.3 }],
+      crystals: [{ x: 110, y: 240 }, { x: 440, y: 80 }, { x: 760, y: 360 }]
+    }),
+    mkLvl({
+      id: 18, world: 6, nameAr: "18: الزعيم الأخير VOID GUARDIAN", nameEn: "18: FINAL BOSS — VOID GUARDIAN",
+      spawn: { x: 80, y: 460 }, portal: { x: 480, y: 270 },
+      platforms: [{ x: 130, y: 360, w: 160, h: 20 }, { x: 670, y: 360, w: 160, h: 20 }, { x: 130, y: 160, w: 160, h: 20 }, { x: 670, y: 160, w: 160, h: 20 }],
+      orbs: [{ x: 210, y: 465, r: 18 }, { x: 750, y: 465, r: 18 }],
+      boss: { name: "VOID GUARDIAN", x: 480, y: 260, r: 38, hp: 5, maxHp: 5, final: true },
+      crystals: [{ x: 210, y: 110 }, { x: 750, y: 110 }, { x: 480, y: 465 }]
+    })
+  ];
+
+  let save = {
+    unlocked: 1,
+    selectedChar: "nova",
+    selectedSkin: "default",
+    ownedSkins: ["default"],
+    upgrades: { speed: 0, jump: 0, cd: 0 },
+    achievements: [],
+    bestTimes: {},
+    collectedMap: {},
+    dailyDoneDate: "",
+    bank: 0
+  };
+  try {
+    const raw = localStorage.getItem("gravity_save_v3");
+    if (raw) save = { ...save, ...JSON.parse(raw) };
+    else {
+      const old = localStorage.getItem("gravity_save_v2");
+      if (old) save = { ...save, ...JSON.parse(old) };
+    }
+  } catch (_) {}
+  function writeSave() {
+    try { localStorage.setItem("gravity_save_v3", JSON.stringify(save)); } catch (_) {}
+  }
+
+  let toastTimer = null;
+  function unlockAchievement(id) {
+    if (save.achievements.includes(id)) return;
+    save.achievements.push(id);
+    writeSave();
+    const def = ACHIEVEMENTS.find(a => a.id === id);
+    if (def) {
+      toastEl.textContent = t("unlockedToast") + (lang === "ar" ? def.nameAr : def.nameEn);
+      toastEl.classList.remove("hidden");
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => toastEl.classList.add("hidden"), 3200);
+    }
+  }
+
+  function todayKey() {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  }
+  function buildDailyLevel() {
+    const key = todayKey();
+    let seed = 0;
+    for (let i = 0; i < key.length; i++) seed = (seed * 31 + key.charCodeAt(i)) >>> 0;
+    const rand = () => { seed = (seed * 1664525 + 1013904223) >>> 0; return seed / 4294967296; };
+    const worldId = (Math.floor(rand() * 6)) + 1;
+    return mkLvl({
+      id: "daily", world: worldId, isDaily: true,
+      nameAr: `التحدي اليومي (${key})`, nameEn: `Daily Challenge (${key})`,
+      spawn: { x: 64, y: 460 }, portal: { x: 870, y: 90 },
+      platforms: [
+        { x: 24, y: 310 + Math.floor(rand() * 40), w: 200, h: 22 },
+        { x: 340, y: 24, w: 24, h: 250 + Math.floor(rand() * 80) },
+        { x: 580, y: 180 + Math.floor(rand() * 50), w: 24, h: 300 },
+        { x: 720, y: 150, w: 216, h: 22 }
+      ],
+      fragile: [{ x: 420, y: 240, w: 120, h: 18 }],
+      zones: [{ x: 620, y: 240, w: 140, h: 240, dir: rand() > 0.5 ? "up" : "right" }],
+      drones: [{ x: 460, y: 440, ax: 390, ay: 440, bx: 540, by: 440, speed: 105, r: 16 }],
+      mines: [{ x: 180, y: 110, r: 16 }, { x: 790, y: 430, r: 16 }],
+      crystals: [{ x: 120, y: 250 }, { x: 480, y: 180 }, { x: 820, y: 310 }]
+    });
+  }
+
+  let currentLevelIdx = 0;
+  let playing = false;
+  let screenMode = "menu";
+  let showTouch = ("ontouchstart" in window) || navigator.maxTouchPoints > 0 || window.innerWidth < 820;
+
+  const GRAV_VECS = {
+    down:  { x: 0, y: 1, icon: "⬇" },
+    up:    { x: 0, y: -1, icon: "⬆" },
+    left:  { x: -1, y: 0, icon: "⬅" },
+    right: { x: 1, y: 0, icon: "➡" }
+  };
+  const OPPOSITE = { down: "up", up: "down", left: "right", right: "left" };
+
+  let levelState = null;
+  let player = null;
+  let particles = [];
+  let stars = Array.from({ length: 75 }, () => ({
+    x: Math.random() * W, y: Math.random() * H,
+    r: 0.8 + Math.random() * 1.8, s: 10 + Math.random() * 24, a: 0.3 + Math.random() * 0.7
+  }));
+
+  const keys = {};
+  const holdInput = { left: false, right: false };
+
+  function getCharStats() {
+    const base = CHARACTERS.find(c => c.id === save.selectedChar) || CHARACTERS[0];
+    const skin = SKINS.find(s => s.id === save.selectedSkin) || SKINS[0];
+    return {
+      ...base,
+      color: skin.color || base.color,
+      accent: skin.accent || base.accent,
+      speed: base.speed * (1 + save.upgrades.speed * 0.1),
+      jump: base.jump * (1 + save.upgrades.jump * 0.08),
+      cooldown: Math.max(0.9, base.cooldown * (1 - save.upgrades.cd * 0.15))
+    };
+  }
+
+  function startLevelDef(def, idx) {
+    currentLevelIdx = idx;
+    const ch = getCharStats();
+    levelState = {
+      def,
+      world: WORLDS.find(w => w.id === def.world) || WORLDS[0],
+      timer: 0,
+      gravDir: "down",
+      crystals: def.crystals.map(c => ({ ...c, collected: false })),
+      orbs: def.orbs.map(o => ({ x: o.x, y: o.y, r: o.r, vx: 0, vy: 0, tpCd: 0 })),
+      switches: def.switches.map(s => ({ ...s, active: false })),
+      gates: def.gates.map(g => ({ ...g, open: false })),
+      mines: def.mines.map(m => ({ ...m, stunTimer: 0 })),
+      gears: def.gears.map(g => ({ ...g })),
+      drones: def.drones.map(d => ({ ...d, t: 0, stunTimer: 0 })),
+      turrets: def.turrets.map(tr => ({ ...tr, fireTimer: 1.4, stunTimer: 0 })),
+      turretBolts: [],
+      moving: def.moving.map(m => ({ ...m, t: 0, dx: 0, dy: 0 })),
+      fragile: def.fragile.map(f => ({ ...f, state: "solid", timer: 0 })),
+      boss: def.boss ? { ...def.boss, t: 0, invuln: 0, fireTimer: 1.5, flipTimer: 6.5, bolts: [] } : null,
+      portalActive: !def.boss
+    };
+    player = {
+      x: def.spawn.x, y: def.spawn.y, w: 28, h: 28,
+      vx: 0, vy: 0, grounded: false,
+      jumpsLeft: ch.doubleJump ? 2 : 1,
+      facing: 1, cd: 0,
+      shieldTimer: 0.7, orbitTimer: 0, dashTimer: 0, tpCd: 0,
+      squash: 1, trail: []
+    };
+    particles = [];
+    playing = true;
+    screenMode = "playing";
+    overlay.classList.add("hidden");
+    updateHUD();
+  }
+
+  function loadLevel(idx) {
+    startLevelDef(LEVELS[idx], idx);
+  }
+
+  function spawnParticles(x, y, color, count = 12, speed = 150) {
+    for (let i = 0; i < count; i++) {
+      const ang = Math.random() * Math.PI * 2;
+      const sp = (0.3 + Math.random() * 0.7) * speed;
+      particles.push({
+        x, y, vx: Math.cos(ang) * sp, vy: Math.sin(ang) * sp,
+        life: 0.35 + Math.random() * 0.3, maxLife: 0.65, color, r: 2 + Math.random() * 3
+      });
+    }
+  }
+
+  function shiftGravity(dir, silent = false) {
+    if (!playing || !levelState) return;
+    if (levelState.gravDir === dir) return;
+    levelState.gravDir = dir;
+    player.grounded = false;
+    player.squash = 0.72;
+    if (!silent) {
+      SFX.grav();
+      spawnParticles(player.x + player.w / 2, player.y + player.h / 2, getCharStats().color, 10, 130);
+    }
+    updateHUD();
+  }
+
+  function doJump() {
+    if (!playing || !levelState) return;
+    const ch = getCharStats();
+    const g = GRAV_VECS[levelState.gravDir];
+    if (player.grounded || player.jumpsLeft > 0) {
+      if (!player.grounded) player.jumpsLeft--;
+      else player.jumpsLeft = ch.doubleJump ? 1 : 0;
+      if (g.x === 0) player.vy = -g.y * ch.jump;
+      else player.vx = -g.x * ch.jump;
+      player.grounded = false;
+      player.squash = 1.28;
+      SFX.jump();
+      spawnParticles(player.x + player.w / 2, player.y + player.h / 2, ch.accent, 7, 100);
+    }
+  }
+
+  function doAbility() {
+    if (!playing || !levelState || player.cd > 0) return;
+    const ch = getCharStats();
+    player.cd = ch.cooldown;
+    SFX.ability();
+    const cx = player.x + player.w / 2;
+    const cy = player.y + player.h / 2;
+
+    if (ch.id === "nova") {
+      spawnParticles(cx, cy, ch.color, 24, 220);
+      for (const orb of levelState.orbs) {
+        const dx = orb.x - cx, dy = orb.y - cy;
+        const dist = Math.hypot(dx, dy);
+        if (dist < 240 && dist > 1) {
+          orb.vx += (dx / dist) * 350;
+          orb.vy += (dy / dist) * 350;
+        }
+      }
+      for (const m of levelState.mines) if (Math.hypot(m.x - cx, m.y - cy) < 230) m.stunTimer = 2.8;
+      for (const d of levelState.drones) if (Math.hypot(d.x - cx, d.y - cy) < 230) d.stunTimer = 2.8;
+      for (const tr of levelState.turrets) if (Math.hypot(tr.x - cx, tr.y - cy) < 230) tr.stunTimer = 3.0;
+    } else if (ch.id === "zen") {
+      const g = GRAV_VECS[levelState.gravDir];
+      if (g.x === 0) player.vy = -g.y * 500;
+      else player.vx = -g.x * 500;
+      player.jumpsLeft = 1;
+      spawnParticles(cx, cy, ch.accent, 16, 170);
+    } else if (ch.id === "orbit") {
+      player.orbitTimer = 2.8;
+      spawnParticles(cx, cy, ch.color, 20, 180);
+    } else if (ch.id === "pulse") {
+      player.dashTimer = 0.28;
+      player.shieldTimer = Math.max(player.shieldTimer, 0.35);
+      const g = GRAV_VECS[levelState.gravDir];
+      if (g.x === 0) player.vx = player.facing * 560;
+      else player.vy = player.facing * 560;
+      spawnParticles(cx, cy, ch.color, 18, 190);
+    } else if (ch.id === "vector") {
+      player.shieldTimer = 2.2;
+      shiftGravity(OPPOSITE[levelState.gravDir]);
+      spawnParticles(cx, cy, ch.accent, 20, 180);
+    }
+  }
+
+  function getSolids() {
+    const solids = [...OUTER_WALLS, ...levelState.def.platforms, ...levelState.moving];
+    for (const f of levelState.fragile) if (f.state !== "gone") solids.push(f);
+    for (const g of levelState.gates) if (!g.open) solids.push(g);
+    return solids;
+  }
+
+  function aabb(a, b) {
+    return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
+  }
+
+  function roundedRectPath(x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.lineTo(x + w - r, y);
+    ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+    ctx.lineTo(x + w, y + h - r);
+    ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+    ctx.lineTo(x + r, y + h);
+    ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+    ctx.lineTo(x, y + r);
+    ctx.quadraticCurveTo(x, y, x + r, y);
+    ctx.closePath();
+  }
+
+  function touchFragile(s) {
+    if (s.state === "solid") { s.state = "cracking"; s.timer = 0.75; SFX.crack(); }
+  }
+
+  function update(dt) {
+    for (const s of stars) {
+      s.y += s.s * dt;
+      if (s.y > H) { s.y = 0; s.x = Math.random() * W; }
+    }
+    if (!playing || !levelState) return;
+
+    const ch = getCharStats();
+    levelState.timer += dt;
+    if (player.cd > 0) player.cd = Math.max(0, player.cd - dt);
+    if (player.shieldTimer > 0) player.shieldTimer = Math.max(0, player.shieldTimer - dt);
+    if (player.orbitTimer > 0) player.orbitTimer = Math.max(0, player.orbitTimer - dt);
+    if (player.dashTimer > 0) player.dashTimer = Math.max(0, player.dashTimer - dt);
+    if (player.tpCd > 0) player.tpCd = Math.max(0, player.tpCd - dt);
+    player.squash += (1 - player.squash) * Math.min(1, dt * 12);
+
+    for (const f of levelState.fragile) {
+      if (f.state === "cracking") {
+        f.timer -= dt;
+        if (f.timer <= 0) { f.state = "gone"; f.timer = 2.4; spawnParticles(f.x + f.w / 2, f.y + f.h / 2, "#e9d5ff", 10, 120); }
+      } else if (f.state === "gone") {
+        f.timer -= dt;
+        if (f.timer <= 0) f.state = "solid";
+      }
+    }
+
+    for (const m of levelState.moving) {
+      const oldX = m.x, oldY = m.y;
+      m.t += dt * (m.speed / Math.max(1, Math.hypot(m.bx - m.ax, m.by - m.ay)));
+      const ping = 0.5 - 0.5 * Math.cos(m.t * Math.PI);
+      m.x = m.ax + (m.bx - m.ax) * ping;
+      m.y = m.ay + (m.by - m.ay) * ping;
+      m.dx = m.x - oldX; m.dy = m.y - oldY;
+    }
+
+    for (const d of levelState.drones) {
+      if (d.stunTimer > 0) { d.stunTimer = Math.max(0, d.stunTimer - dt); continue; }
+      d.t += dt * (d.speed / Math.max(1, Math.hypot(d.bx - d.ax, d.by - d.ay)));
+      const ping = 0.5 - 0.5 * Math.cos(d.t * Math.PI);
+      d.x = d.ax + (d.bx - d.ax) * ping;
+      d.y = d.ay + (d.by - d.ay) * ping;
+    }
+
+    let activeGrav = levelState.gravDir;
+    for (const z of levelState.def.zones) if (aabb(player, z)) activeGrav = z.dir;
+    const g = GRAV_VECS[activeGrav];
+
+    let moveAxis = 0;
+    const leftPressed = keys["KeyA"] || holdInput.left || (g.x !== 0 && keys["KeyW"]);
+    const rightPressed = keys["KeyD"] || holdInput.right || (g.x !== 0 && keys["KeyS"]);
+    if (leftPressed) moveAxis -= 1;
+    if (rightPressed) moveAxis += 1;
+    if (moveAxis !== 0) player.facing = moveAxis;
+
+    const GRAVITY_ACCEL = 980;
+    const MAX_FALL = 580;
+
+    if (player.dashTimer <= 0) {
+      if (g.x === 0) {
+        player.vx += (moveAxis * ch.speed - player.vx) * Math.min(1, dt * 14);
+        player.vy += g.y * GRAVITY_ACCEL * dt;
+        player.vy = Math.max(-MAX_FALL, Math.min(MAX_FALL, player.vy));
+      } else {
+        player.vy += (moveAxis * ch.speed - player.vy) * Math.min(1, dt * 14);
+        player.vx += g.x * GRAVITY_ACCEL * dt;
+        player.vx = Math.max(-MAX_FALL, Math.min(MAX_FALL, player.vx));
+      }
+    }
+
+    const solids = getSolids();
+    player.grounded = false;
+
+    player.x += player.vx * dt;
+    for (const s of solids) {
+      if (aabb(player, s)) {
+        if (s.state) touchFragile(s);
+        if (player.vx > 0) { player.x = s.x - player.w; if (g.x > 0) { player.grounded = true; player.jumpsLeft = ch.doubleJump ? 2 : 1; } }
+        else if (player.vx < 0) { player.x = s.x + s.w; if (g.x < 0) { player.grounded = true; player.jumpsLeft = ch.doubleJump ? 2 : 1; } }
+        player.vx = 0;
+      }
+    }
+
+    player.y += player.vy * dt;
+    for (const s of solids) {
+      if (aabb(player, s)) {
+        if (s.state) touchFragile(s);
+        if (player.vy > 0) {
+          player.y = s.y - player.h;
+          if (g.y > 0) { player.grounded = true; player.jumpsLeft = ch.doubleJump ? 2 : 1; if (s.dx) player.x += s.dx; if (s.dy) player.y += s.dy; }
+        } else if (player.vy < 0) {
+          player.y = s.y + s.h;
+          if (g.y < 0) { player.grounded = true; player.jumpsLeft = ch.doubleJump ? 2 : 1; if (s.dx) player.x += s.dx; if (s.dy) player.y += s.dy; }
+        }
+        player.vy = 0;
+      }
+    }
+
+    const pcx = player.x + player.w / 2;
+    const pcy = player.y + player.h / 2;
+    player.trail.push({ x: pcx, y: pcy });
+    if (player.trail.length > 10) player.trail.shift();
+
+    if (player.tpCd <= 0) {
+      for (const tp of levelState.def.teleporters) {
+        if (Math.hypot(pcx - tp.ax, pcy - tp.ay) < 26) {
+          player.x = tp.bx - player.w / 2; player.y = tp.by - player.h / 2; player.tpCd = 0.7; SFX.tp();
+          spawnParticles(tp.bx, tp.by, tp.color, 16, 160); break;
+        } else if (Math.hypot(pcx - tp.bx, pcy - tp.by) < 26) {
+          player.x = tp.ax - player.w / 2; player.y = tp.ay - player.h / 2; player.tpCd = 0.7; SFX.tp();
+          spawnParticles(tp.ax, tp.ay, tp.color, 16, 160); break;
+        }
+      }
+    }
+
+    for (const orb of levelState.orbs) {
+      if (orb.tpCd > 0) orb.tpCd = Math.max(0, orb.tpCd - dt);
+      let og = g;
+      for (const z of levelState.def.zones) if (orb.x > z.x && orb.x < z.x + z.w && orb.y > z.y && orb.y < z.y + z.h) og = GRAV_VECS[z.dir];
+      orb.vx += og.x * GRAVITY_ACCEL * 0.85 * dt;
+      orb.vy += og.y * GRAVITY_ACCEL * 0.85 * dt;
+      orb.vx *= (1 - 1.1 * dt); orb.vy *= (1 - 1.1 * dt);
+
+      const dx = orb.x - pcx, dy = orb.y - pcy, dist = Math.hypot(dx, dy), minDist = orb.r + player.w * 0.52;
+      if (dist < minDist && dist > 0.01) {
+        const nx = dx / dist, ny = dy / dist, overlap = minDist - dist;
+        orb.x += nx * overlap * 0.75; orb.y += ny * overlap * 0.75;
+        orb.vx += nx * 170; orb.vy += ny * 170;
+      }
+
+      orb.x += orb.vx * dt;
+      let oBox = { x: orb.x - orb.r, y: orb.y - orb.r, w: orb.r * 2, h: orb.r * 2 };
+      for (const s of solids) {
+        if (aabb(oBox, s)) {
+          if (orb.vx > 0) orb.x = s.x - orb.r; else if (orb.vx < 0) orb.x = s.x + s.w + orb.r;
+          orb.vx *= -0.3; oBox.x = orb.x - orb.r;
+        }
+      }
+      orb.y += orb.vy * dt;
+      oBox = { x: orb.x - orb.r, y: orb.y - orb.r, w: orb.r * 2, h: orb.r * 2 };
+      for (const s of solids) {
+        if (aabb(oBox, s)) {
+          if (orb.vy > 0) orb.y = s.y - orb.r; else if (orb.vy < 0) orb.y = s.y + s.h + orb.r;
+          orb.vy *= -0.3; oBox.y = orb.y - orb.r;
+        }
+      }
+
+      if (orb.tpCd <= 0) {
+        for (const tp of levelState.def.teleporters) {
+          if (Math.hypot(orb.x - tp.ax, orb.y - tp.ay) < 26) {
+            orb.x = tp.bx; orb.y = tp.by; orb.tpCd = 0.75; SFX.tp(); spawnParticles(tp.bx, tp.by, tp.color, 14, 150); break;
+          } else if (Math.hypot(orb.x - tp.bx, orb.y - tp.by) < 26) {
+            orb.x = tp.ax; orb.y = tp.ay; orb.tpCd = 0.75; SFX.tp(); spawnParticles(tp.ax, tp.ay, tp.color, 14, 150); break;
+          }
+        }
+      }
+    }
+
+    for (const sw of levelState.switches) {
+      if (!sw.active) {
+        for (const orb of levelState.orbs) {
+          if (aabb({ x: orb.x - orb.r, y: orb.y - orb.r, w: orb.r * 2, h: orb.r * 2 }, sw)) {
+            sw.active = true;
+            const gate = levelState.gates.find(gt => gt.id === sw.targetGate);
+            if (gate) gate.open = true;
+            SFX.switch();
+            spawnParticles(sw.x + sw.w / 2, sw.y, "#34d399", 22, 180);
+          }
+        }
+      }
+    }
+
+    for (const c of levelState.crystals) {
+      if (c.collected) continue;
+      const dx = pcx - c.x, dy = pcy - c.y, dist = Math.hypot(dx, dy);
+      if (player.orbitTimer > 0 && dist < 190 && dist > 1) { c.x += (dx / dist) * 260 * dt; c.y += (dy / dist) * 260 * dt; }
+      if (dist < 28) {
+        c.collected = true; SFX.crystal(); spawnParticles(c.x, c.y, "#00f0ff", 14, 150);
+        unlockAchievement("first_crystal");
+      }
+    }
+
+    const hitHazard = () => {
+      SFX.hit(); spawnParticles(pcx, pcy, "#ef4444", 24, 220);
+      startLevelDef(levelState.def, currentLevelIdx);
+    };
+
+    for (const m of levelState.mines) {
+      if (m.stunTimer > 0) m.stunTimer = Math.max(0, m.stunTimer - dt);
+      const dx = m.x - pcx, dy = m.y - pcy, dist = Math.hypot(dx, dy);
+      if (player.orbitTimer > 0 && dist < 160 && dist > 1) { m.x += (dx / dist) * 120 * dt; m.y += (dy / dist) * 120 * dt; }
+      if (m.stunTimer <= 0 && player.shieldTimer <= 0 && dist < m.r + 12) { hitHazard(); return; }
+    }
+    for (const d of levelState.drones) {
+      if (d.stunTimer <= 0 && player.shieldTimer <= 0 && Math.hypot(d.x - pcx, d.y - pcy) < d.r + 12) { hitHazard(); return; }
+    }
+    for (const gr of levelState.gears) {
+      if (player.shieldTimer <= 0 && Math.hypot(gr.x - pcx, gr.y - pcy) < gr.r + 11) { hitHazard(); return; }
+    }
+
+    for (const tr of levelState.turrets) {
+      if (tr.stunTimer > 0) { tr.stunTimer = Math.max(0, tr.stunTimer - dt); continue; }
+      tr.fireTimer -= dt;
+      if (tr.fireTimer <= 0) {
+        tr.fireTimer = tr.rate;
+        const ang = Math.atan2(pcy - tr.y, pcx - tr.x);
+        levelState.turretBolts.push({ x: tr.x, y: tr.y, vx: Math.cos(ang) * 185, vy: Math.sin(ang) * 185, r: 6 });
+      }
+    }
+    for (let i = levelState.turretBolts.length - 1; i >= 0; i--) {
+      const b = levelState.turretBolts[i];
+      b.x += b.vx * dt; b.y += b.vy * dt;
+      if (b.x < 24 || b.x > W - 24 || b.y < 24 || b.y > H - 24) { levelState.turretBolts.splice(i, 1); continue; }
+      let hitWall = false;
+      for (const s of solids) {
+        if (b.x > s.x && b.x < s.x + s.w && b.y > s.y && b.y < s.y + s.h) { hitWall = true; break; }
+      }
+      if (hitWall) { levelState.turretBolts.splice(i, 1); continue; }
+      if (player.shieldTimer <= 0 && Math.hypot(b.x - pcx, b.y - pcy) < b.r + 11) { hitHazard(); return; }
+    }
+
+    const boss = levelState.boss;
+    if (boss && boss.hp > 0) {
+      boss.t += dt;
+      if (boss.invuln > 0) boss.invuln = Math.max(0, boss.invuln - dt);
+      const speedMul = 1 + (boss.maxHp - boss.hp) * (boss.final ? 0.25 : 0.35);
+      boss.x = 480 + Math.sin(boss.t * 1.15 * speedMul) * 130;
+      boss.y = 260 + Math.cos(boss.t * 1.65 * speedMul) * 58;
+
+      if (boss.final && boss.hp <= 3) {
+        boss.flipTimer -= dt;
+        if (boss.flipTimer <= 0) {
+          boss.flipTimer = 6.5;
+          const dirs = ["down", "up", "left", "right"];
+          shiftGravity(dirs[Math.floor(Math.random() * dirs.length)]);
+        }
+      }
+
+      boss.fireTimer -= dt;
+      if (boss.fireTimer <= 0) {
+        boss.fireTimer = Math.max(1.1, (boss.final ? 2.1 : 2.3) - (boss.maxHp - boss.hp) * 0.22);
+        const ang = Math.atan2(pcy - boss.y, pcx - boss.x);
+        const spread = boss.final && boss.hp <= 4 ? [-0.24, 0, 0.24] : [0];
+        for (const off of spread) {
+          boss.bolts.push({ x: boss.x, y: boss.y, vx: Math.cos(ang + off) * 200, vy: Math.sin(ang + off) * 200, r: 8 });
+        }
+      }
+      for (let i = boss.bolts.length - 1; i >= 0; i--) {
+        const b = boss.bolts[i];
+        b.x += b.vx * dt; b.y += b.vy * dt;
+        if (b.x < 24 || b.x > W - 24 || b.y < 24 || b.y > H - 24) { boss.bolts.splice(i, 1); continue; }
+        if (player.shieldTimer <= 0 && Math.hypot(b.x - pcx, b.y - pcy) < b.r + 12) { hitHazard(); return; }
+      }
+
+      if (boss.invuln <= 0) {
+        for (const orb of levelState.orbs) {
+          const dist = Math.hypot(orb.x - boss.x, orb.y - boss.y);
+          const spd = Math.hypot(orb.vx, orb.vy);
+          if (dist < orb.r + boss.r && spd > 80) {
+            boss.hp--; boss.invuln = 1.25;
+            orb.vx *= -0.7; orb.vy *= -0.7;
+            SFX.bossHit();
+            spawnParticles(boss.x, boss.y, "#facc15", 28, 240);
+            if (boss.hp <= 0) {
+              levelState.portalActive = true; boss.bolts = []; SFX.win();
+              spawnParticles(boss.x, boss.y, "#00f0ff", 50, 290);
+            }
+            break;
+          }
+        }
+      }
+      if (player.shieldTimer <= 0 && Math.hypot(pcx - boss.x, pcy - boss.y) < boss.r + 12) { hitHazard(); return; }
+    }
+
+    if (levelState.portalActive) {
+      const pt = levelState.def.portal;
+      if (Math.hypot(pcx - pt.x, pcy - pt.y) < 30) { onLevelWin(); return; }
+    }
+
+    for (let i = particles.length - 1; i >= 0; i--) {
+      const p = particles[i]; p.x += p.vx * dt; p.y += p.vy * dt; p.life -= dt;
+      if (p.life <= 0) particles.splice(i, 1);
+    }
+
+    updateHUD();
+  }
+
+  function onLevelWin() {
+    playing = false;
+    SFX.win();
+    const def = levelState.def;
+    const timeVal = Number(levelState.timer.toFixed(1));
+    const got = levelState.crystals.filter(c => c.collected).length;
+    let dailyBonus = false;
+
+    if (timeVal < 12) unlockAchievement("speedrunner");
+
+    if (def.isDaily) {
+      const key = todayKey();
+      if (save.dailyDoneDate !== key) {
+        save.dailyDoneDate = key;
+        save.bank += 5;
+        dailyBonus = true;
+      }
+    } else {
+      const lvlId = def.id;
+      if (!save.bestTimes[lvlId] || timeVal < save.bestTimes[lvlId]) save.bestTimes[lvlId] = timeVal;
+      if (lvlId >= save.unlocked && lvlId < LEVELS.length) save.unlocked = lvlId + 1;
+
+      const prevBestCrystals = save.collectedMap[lvlId] || 0;
+      if (got > prevBestCrystals) {
+        save.bank += (got - prevBestCrystals);
+        save.collectedMap[lvlId] = got;
+      }
+      if (lvlId >= 3) unlockAchievement("neon_clear");
+      if (lvlId >= 6) unlockAchievement("crystal_clear");
+      if (lvlId >= 9) unlockAchievement("boss_slayer");
+      if (lvlId >= 12) unlockAchievement("dark_master");
+      if (lvlId >= 15) unlockAchievement("mech_master");
+      if (lvlId >= 18) unlockAchievement("void_hero");
+    }
+
+    writeSave();
+    showWinOverlay(got, levelState.crystals.length, timeVal, dailyBonus);
+  }
+
+  function drawCharacterSprite(cx, cy, ch, gravDir, facing, squash, now) {
+    ctx.save();
+    ctx.translate(cx, cy);
+    const rotMap = { down: 0, up: Math.PI, left: Math.PI / 2, right: -Math.PI / 2 };
+    ctx.rotate(rotMap[gravDir]);
+    ctx.scale(1 / squash, squash);
+
+    if (ch.id === "orbit") {
+      ctx.strokeStyle = ch.accent; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.ellipse(0, 0, 19, 7, now * 2, 0, Math.PI * 2); ctx.stroke();
+    } else if (ch.id === "zen") {
+      ctx.fillStyle = ch.color; ctx.strokeStyle = "#fff"; ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.moveTo(-11, -11); ctx.lineTo(-14, -20); ctx.lineTo(-4, -13); ctx.closePath(); ctx.fill(); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(11, -11); ctx.lineTo(14, -20); ctx.lineTo(4, -13); ctx.closePath(); ctx.fill(); ctx.stroke();
+    } else if (ch.id === "vector") {
+      ctx.fillStyle = ch.accent;
+      ctx.beginPath(); ctx.moveTo(0, -21); ctx.lineTo(-5, -13); ctx.lineTo(5, -13); ctx.closePath(); ctx.fill();
+    }
+
+    ctx.fillStyle = ch.color; ctx.strokeStyle = "#ffffff"; ctx.lineWidth = 2;
+    roundedRectPath(-13, -13, 26, 26, ch.id === "pulse" ? 5 : 8);
+    ctx.fill(); ctx.stroke();
+
+    ctx.fillStyle = "#090d1f";
+    roundedRectPath(-9, -6, 18, 9, 4);
+    ctx.fill();
+
+    ctx.fillStyle = ch.accent;
+    const eyeOff = facing * 2;
+    ctx.beginPath(); ctx.arc(-4 + eyeOff, -1.5, 2.2, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(4 + eyeOff, -1.5, 2.2, 0, Math.PI * 2); ctx.fill();
+
+    if (ch.id === "nova") {
+      ctx.strokeStyle = ch.accent;
+      ctx.beginPath(); ctx.moveTo(0, -13); ctx.lineTo(0, -19); ctx.stroke();
+      ctx.fillStyle = ch.accent; ctx.beginPath(); ctx.arc(0, -20, 3, 0, Math.PI * 2); ctx.fill();
+    }
+    ctx.restore();
+  }
+
+  function draw() {
+    const wTheme = levelState ? levelState.world : WORLDS[0];
+    ctx.fillStyle = wTheme.bg;
+    ctx.fillRect(0, 0, W, H);
+
+    ctx.strokeStyle = wTheme.grid; ctx.lineWidth = 1;
+    for (let x = 0; x < W; x += 48) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke(); }
+    for (let y = 0; y < H; y += 48) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke(); }
+
+    for (const s of stars) {
+      ctx.fillStyle = `rgba(186, 230, 253, ${s.a})`;
+      ctx.beginPath(); ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2); ctx.fill();
+    }
+
+    if (!levelState) return;
+    const now = performance.now() * 0.001;
+
+    for (const z of levelState.def.zones) {
+      ctx.fillStyle = wTheme.id === 3 ? "rgba(45, 212, 191, 0.14)" : "rgba(168, 85, 247, 0.14)";
+      ctx.strokeStyle = wTheme.id === 3 ? "rgba(45, 212, 191, 0.6)" : "rgba(168, 85, 247, 0.55)";
+      ctx.lineWidth = 2; ctx.fillRect(z.x, z.y, z.w, z.h); ctx.strokeRect(z.x, z.y, z.w, z.h);
+      ctx.fillStyle = "rgba(226, 232, 240, 0.7)"; ctx.font = "bold 24px sans-serif"; ctx.textAlign = "center";
+      ctx.fillText(GRAV_VECS[z.dir].icon, z.x + z.w / 2, z.y + z.h / 2 + 8);
+    }
+
+    const drawBlock = (b, glow, fill) => {
+      ctx.fillStyle = fill; ctx.fillRect(b.x, b.y, b.w, b.h);
+      ctx.strokeStyle = glow; ctx.lineWidth = 2; ctx.strokeRect(b.x + 1, b.y + 1, b.w - 2, b.h - 2);
+    };
+    for (const w of OUTER_WALLS) drawBlock(w, wTheme.platGlow + "88", "#070c1c");
+    for (const p of levelState.def.platforms) drawBlock(p, wTheme.platGlow, wTheme.platFill);
+    for (const m of levelState.moving) drawBlock(m, "#a855f7", "#231246");
+    for (const f of levelState.fragile) {
+      if (f.state === "gone") continue;
+      drawBlock(f, f.state === "cracking" ? "#facc15" : "#e879f9", f.state === "cracking" ? "rgba(250,204,21,0.22)" : "rgba(232,121,249,0.18)");
+    }
+
+    for (const tp of levelState.def.teleporters) {
+      for (const pos of [{ x: tp.ax, y: tp.ay }, { x: tp.bx, y: tp.by }]) {
+        ctx.save(); ctx.translate(pos.x, pos.y); ctx.rotate(now * 3);
+        ctx.strokeStyle = tp.color; ctx.lineWidth = 3;
+        ctx.beginPath(); ctx.arc(0, 0, 18, 0, Math.PI * 1.6); ctx.stroke();
+        ctx.fillStyle = tp.color + "33";
+        ctx.beginPath(); ctx.arc(0, 0, 12, 0, Math.PI * 2); ctx.fill();
+        ctx.restore();
+      }
+    }
+
+    for (const g of levelState.gates) {
+      if (g.open) {
+        ctx.strokeStyle = "rgba(52, 211, 153, 0.25)"; ctx.setLineDash([6, 6]);
+        ctx.strokeRect(g.x, g.y, g.w, g.h); ctx.setLineDash([]);
+      } else {
+        ctx.fillStyle = "rgba(239, 68, 68, 0.45)"; ctx.fillRect(g.x, g.y, g.w, g.h);
+        ctx.strokeStyle = "#f87171"; ctx.lineWidth = 2; ctx.strokeRect(g.x, g.y, g.w, g.h);
+      }
+    }
+    for (const sw of levelState.switches) {
+      ctx.fillStyle = sw.active ? "#34d399" : "#f59e0b"; ctx.fillRect(sw.x, sw.y, sw.w, sw.h);
+      ctx.strokeStyle = "#fff"; ctx.lineWidth = 1.5; ctx.strokeRect(sw.x, sw.y, sw.w, sw.h);
+    }
+
+    if (levelState.portalActive) {
+      const pt = levelState.def.portal;
+      ctx.save(); ctx.translate(pt.x, pt.y); ctx.rotate(now * 2.2);
+      ctx.strokeStyle = "#00f0ff"; ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.arc(0, 0, 24, 0, Math.PI * 1.5); ctx.stroke();
+      ctx.rotate(-now * 4.4);
+      ctx.strokeStyle = "#a855f7";
+      ctx.beginPath(); ctx.arc(0, 0, 16, 0, Math.PI * 1.5); ctx.stroke();
+      ctx.fillStyle = "rgba(0, 240, 255, 0.28)";
+      ctx.beginPath(); ctx.arc(0, 0, 12, 0, Math.PI * 2); ctx.fill();
+      ctx.restore();
+    }
+
+    for (const c of levelState.crystals) {
+      if (c.collected) continue;
+      ctx.save(); ctx.translate(c.x, c.y + Math.sin(now * 4 + c.x) * 4); ctx.rotate(now * 1.6);
+      ctx.fillStyle = "#00f0ff"; ctx.strokeStyle = "#e0f2fe"; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.moveTo(0, -12); ctx.lineTo(9, 0); ctx.lineTo(0, 12); ctx.lineTo(-9, 0); ctx.closePath();
+      ctx.fill(); ctx.stroke(); ctx.restore();
+    }
+
+    for (const orb of levelState.orbs) {
+      const grad = ctx.createRadialGradient(orb.x - 5, orb.y - 5, 3, orb.x, orb.y, orb.r);
+      grad.addColorStop(0, "#ffffff"); grad.addColorStop(0.4, "#a855f7"); grad.addColorStop(1, "#3b0764");
+      ctx.fillStyle = grad; ctx.beginPath(); ctx.arc(orb.x, orb.y, orb.r, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = "#e9d5ff"; ctx.lineWidth = 2; ctx.stroke();
+    }
+
+    for (const m of levelState.mines) {
+      ctx.save(); ctx.translate(m.x, m.y); ctx.rotate(now * (m.stunTimer > 0 ? 0.5 : 3));
+      ctx.fillStyle = m.stunTimer > 0 ? "#475569" : "#ef4444";
+      ctx.strokeStyle = m.stunTimer > 0 ? "#94a3b8" : "#fecaca"; ctx.lineWidth = 2;
+      ctx.beginPath();
+      for (let i = 0; i < 8; i++) {
+        const ang = (i * Math.PI) / 4, rad = i % 2 === 0 ? m.r : m.r * 0.55;
+        if (i === 0) ctx.moveTo(Math.cos(ang) * rad, Math.sin(ang) * rad);
+        else ctx.lineTo(Math.cos(ang) * rad, Math.sin(ang) * rad);
+      }
+      ctx.closePath(); ctx.fill(); ctx.stroke(); ctx.restore();
+    }
+
+    for (const d of levelState.drones) {
+      ctx.save(); ctx.translate(d.x, d.y);
+      ctx.fillStyle = d.stunTimer > 0 ? "#475569" : "#f97316";
+      ctx.strokeStyle = "#ffedd5"; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.arc(0, 0, d.r, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = "#090d1f"; ctx.fillRect(-9, -4, 18, 8);
+      ctx.fillStyle = d.stunTimer > 0 ? "#94a3b8" : "#fef08a";
+      ctx.beginPath(); ctx.arc(Math.sin(now * 6) * 4, 0, 3, 0, Math.PI * 2); ctx.fill();
+      ctx.restore();
+    }
+
+    for (const gr of levelState.gears) {
+      ctx.save(); ctx.translate(gr.x, gr.y); ctx.rotate(now * 2.5);
+      ctx.fillStyle = "#f59e0b"; ctx.strokeStyle = "#fef3c7"; ctx.lineWidth = 2;
+      ctx.beginPath();
+      for (let i = 0; i < 12; i++) {
+        const ang = (i * Math.PI) / 6, rad = i % 2 === 0 ? gr.r : gr.r * 0.68;
+        if (i === 0) ctx.moveTo(Math.cos(ang) * rad, Math.sin(ang) * rad);
+        else ctx.lineTo(Math.cos(ang) * rad, Math.sin(ang) * rad);
+      }
+      ctx.closePath(); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = "#1c1917"; ctx.beginPath(); ctx.arc(0, 0, 6, 0, Math.PI * 2); ctx.fill();
+      ctx.restore();
+    }
+
+    for (const tr of levelState.turrets) {
+      ctx.fillStyle = tr.stunTimer > 0 ? "#475569" : "#c026d3";
+      ctx.strokeStyle = "#f5d0fe"; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.arc(tr.x, tr.y, 14, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = "#fef08a"; ctx.beginPath(); ctx.arc(tr.x, tr.y, 5, 0, Math.PI * 2); ctx.fill();
+    }
+    for (const b of levelState.turretBolts) {
+      ctx.fillStyle = "#e879f9"; ctx.beginPath(); ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = "#fff"; ctx.lineWidth = 1.5; ctx.stroke();
+    }
+
+    const boss = levelState.boss;
+    if (boss && boss.hp > 0) {
+      ctx.save(); ctx.translate(boss.x, boss.y); ctx.rotate(now * 1.4);
+      ctx.strokeStyle = boss.invuln > 0 ? "#ffffff" : (boss.final ? "#d946ef" : "#f43f5e");
+      ctx.lineWidth = 4;
+      ctx.beginPath(); ctx.arc(0, 0, boss.r + 6, 0, Math.PI * 1.7); ctx.stroke();
+      ctx.restore();
+
+      ctx.fillStyle = boss.invuln > 0 ? "#ffffff" : (boss.final ? "#581c87" : "#9f1239");
+      ctx.strokeStyle = boss.final ? "#f0abfc" : "#fda4af"; ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.arc(boss.x, boss.y, boss.r, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = "#090d1f"; ctx.beginPath(); ctx.arc(boss.x, boss.y, 14, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = "#facc15"; ctx.beginPath(); ctx.arc(boss.x, boss.y, 6 + Math.sin(now * 8) * 2, 0, Math.PI * 2); ctx.fill();
+
+      for (const b of boss.bolts) {
+        ctx.fillStyle = boss.final ? "#e879f9" : "#fb7185";
+        ctx.beginPath(); ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2); ctx.fill();
+        ctx.strokeStyle = "#fff"; ctx.lineWidth = 1.5; ctx.stroke();
+      }
+
+      ctx.fillStyle = "rgba(0,0,0,0.6)"; ctx.fillRect(W / 2 - 140, 32, 280, 14);
+      ctx.fillStyle = boss.final ? "#d946ef" : "#f43f5e";
+      ctx.fillRect(W / 2 - 138, 34, 276 * (boss.hp / boss.maxHp), 10);
+      ctx.fillStyle = "#e2e8f0"; ctx.font = "bold 12px sans-serif"; ctx.textAlign = "center";
+      ctx.fillText(`${boss.name} (${boss.hp}/${boss.maxHp}) — ${t("bossHint")}`, W / 2, 62);
+    }
+
+    if (player) {
+      const ch = getCharStats();
+      for (let i = 0; i < player.trail.length; i++) {
+        const tr = player.trail[i]; ctx.fillStyle = ch.color + "33";
+        ctx.beginPath(); ctx.arc(tr.x, tr.y, (i / player.trail.length) * 10, 0, Math.PI * 2); ctx.fill();
+      }
+      const cx = player.x + player.w / 2, cy = player.y + player.h / 2;
+      if (player.orbitTimer > 0) {
+        ctx.strokeStyle = "rgba(168, 85, 247, 0.7)"; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.arc(cx, cy, 42 + Math.sin(now * 10) * 4, 0, Math.PI * 2); ctx.stroke();
+      }
+      if (player.shieldTimer > 0) {
+        ctx.strokeStyle = "rgba(250, 204, 21, 0.85)"; ctx.lineWidth = 3;
+        ctx.beginPath(); ctx.arc(cx, cy, 22, 0, Math.PI * 2); ctx.stroke();
+      }
+      drawCharacterSprite(cx, cy, ch, levelState.gravDir, player.facing, player.squash, now);
+    }
+
+    for (const p of particles) {
+      ctx.globalAlpha = Math.max(0, p.life / p.maxLife); ctx.fillStyle = p.color;
+      ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2); ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  function updateHUD() {
+    document.documentElement.lang = lang;
+    document.documentElement.dir = lang === "ar" ? "rtl" : "ltr";
+    document.getElementById("btnRestart").textContent = t("restart");
+    document.getElementById("btnTouchToggle").textContent = t("touch");
+    document.getElementById("btnMusic").textContent = musicOn ? t("musicOn") : t("musicOff");
+    document.getElementById("btnSound").textContent = muted ? t("soundOff") : t("soundOn");
+    document.getElementById("btnLang").textContent = lang === "ar" ? "EN" : "AR";
+    document.getElementById("btnMenu").textContent = t("menu");
+    document.getElementById("tJump").textContent = t("jump");
+    document.getElementById("tAbility").textContent = t("ability");
+    document.getElementById("hintLine").textContent = t("hint");
+    document.getElementById("hudBank").textContent = `🏦 ${save.bank}`;
+    touchBar.classList.toggle("hidden", !showTouch);
+
+    if (levelState) {
+      const got = levelState.crystals.filter(c => c.collected).length;
+      document.getElementById("hudLevel").textContent = lang === "ar" ? levelState.def.nameAr : levelState.def.nameEn;
+      document.getElementById("hudCrystals").textContent = `💎 ${got}/${levelState.crystals.length}`;
+      document.getElementById("hudTimer").textContent = `⏱ ${levelState.timer.toFixed(1)}s`;
+      document.getElementById("hudGrav").textContent = GRAV_VECS[levelState.gravDir].icon;
+      const abBtn = document.getElementById("tAbility");
+      abBtn.textContent = player && player.cd > 0 ? `⏳ ${player.cd.toFixed(1)}s` : t("ability");
+    }
+  }
+
+  function showMenu() {
+    playing = false; screenMode = "menu"; overlay.classList.remove("hidden");
+    const ch = getCharStats();
+    overlayCard.innerHTML = `
+      <h1 class="title-big">GRAVITY</h1>
+      <p class="subtitle">${t("subtitle")}</p>
+      <div class="pill" style="display:inline-flex;margin-bottom:8px;">
+        <span class="char-dot" style="background:${ch.color};"></span>
+        <span>${ch.name}</span><span>•</span><span>💎 ${save.bank}</span>
+        <span>•</span><span>🏆 ${save.achievements.length}/${ACHIEVEMENTS.length}</span>
+      </div>
+      <div class="menu-actions">
+        <button class="btn btn-primary" id="mPlay">${t("play")}</button>
+        <button class="btn" id="mWorlds">${t("worlds")}</button>
+        <button class="btn" id="mDaily">${t("daily")}</button>
+        <button class="btn" id="mChars">${t("chars")}</button>
+        <button class="btn" id="mShop">${t("shop")}</button>
+        <button class="btn" id="mAch">${t("ach")}</button>
+        <button class="btn" id="mStory">${t("story")}</button>
+        <button class="btn" id="mHow">${t("how")}</button>
+      </div>
+    `;
+    document.getElementById("mPlay").onclick = () => { ensureAudio(); loadLevel(Math.min(save.unlocked - 1, LEVELS.length - 1)); };
+    document.getElementById("mWorlds").onclick = showWorlds;
+    document.getElementById("mDaily").onclick = () => { ensureAudio(); startLevelDef(buildDailyLevel(), -1); };
+    document.getElementById("mChars").onclick = showChars;
+    document.getElementById("mShop").onclick = showShop;
+    document.getElementById("mAch").onclick = showAchievements;
+    document.getElementById("mStory").onclick = showStory;
+    document.getElementById("mHow").onclick = showHow;
+    updateHUD();
+  }
+
+  function showChars() {
+    screenMode = "chars"; overlay.classList.remove("hidden");
+    const cards = CHARACTERS.map(c => `
+      <div class="item-card ${save.selectedChar === c.id ? "active" : ""}" data-char="${c.id}">
+        <div style="font-weight:800;margin-bottom:4px;">
+          <span class="char-dot" style="background:${c.color};box-shadow:0 0 8px ${c.color};"></span>${c.name}
+        </div>
+        <div style="font-size:12px;color:#cbd5e1;line-height:1.5;">${lang === "ar" ? c.descAr : c.descEn}</div>
+      </div>
+    `).join("");
+    overlayCard.innerHTML = `<h2 style="margin:0 0 8px;">${t("selectChar")}</h2><div class="grid">${cards}</div><div class="menu-actions"><button class="btn" id="mBack">${t("back")}</button></div>`;
+    overlayCard.querySelectorAll("[data-char]").forEach(el => {
+      el.onclick = () => { save.selectedChar = el.dataset.char; writeSave(); SFX.crystal(); showChars(); };
+    });
+    document.getElementById("mBack").onclick = showMenu;
+  }
+
+  function showWorlds() {
+    screenMode = "worlds"; overlay.classList.remove("hidden");
+    let html = `<h2 style="margin:0 0 8px;">${t("selectWorld")}</h2>`;
+    for (const w of WORLDS) {
+      html += `<div class="section-title" style="color:${w.platGlow};">${lang === "ar" ? w.nameAr : w.nameEn}</div><div class="grid">`;
+      const lvls = LEVELS.map((lvl, idx) => ({ lvl, idx })).filter(x => x.lvl.world === w.id);
+      for (const { lvl, idx } of lvls) {
+        const unlocked = lvl.id <= save.unlocked;
+        const best = save.bestTimes[lvl.id];
+        const cry = save.collectedMap[lvl.id] || 0;
+        html += `
+          <div class="item-card ${unlocked ? "" : "locked"}" data-lvl="${idx}">
+            <div style="font-weight:800;margin-bottom:4px;">${lang === "ar" ? lvl.nameAr : lvl.nameEn}</div>
+            <div style="font-size:12px;color:#94a3b8;">
+              ${unlocked ? `💎 ${cry}/${lvl.crystals.length} • ${best ? `${t("best")}: ${best}s` : t("ready")}` : t("locked")}
+            </div>
+          </div>`;
+      }
+      html += `</div>`;
+    }
+    html += `<div class="menu-actions"><button class="btn" id="mBack">${t("back")}</button></div>`;
+    overlayCard.innerHTML = html;
+    overlayCard.querySelectorAll("[data-lvl]").forEach(el => {
+      el.onclick = () => {
+        ensureAudio();
+        const idx = Number(el.dataset.lvl);
+        if (LEVELS[idx].id <= save.unlocked) loadLevel(idx);
+      };
+    });
+    document.getElementById("mBack").onclick = showMenu;
+  }
+
+  function showShop() {
+    screenMode = "shop"; overlay.classList.remove("hidden");
+    const upgDefs = [
+      { key: "speed", nameAr: "⚡ ترقية السرعة (+10%)", nameEn: "⚡ Speed Boost (+10%)", costs: [2, 4, 6] },
+      { key: "jump", nameAr: "🚀 ترقية القفز (+8%)", nameEn: "🚀 Jump Power (+8%)", costs: [2, 4, 6] },
+      { key: "cd", nameAr: "⏱ شحن القدرة (-15%)", nameEn: "⏱ Ability Cooldown (-15%)", costs: [3, 5, 7] }
+    ];
+    const upgHtml = upgDefs.map(u => {
+      const lv = save.upgrades[u.key] || 0, maxed = lv >= 3, cost = maxed ? 0 : u.costs[lv], canBuy = !maxed && save.bank >= cost;
+      return `
+        <div class="item-card">
+          <div style="font-weight:800;margin-bottom:4px;">${lang === "ar" ? u.nameAr : u.nameEn}</div>
+          <div style="font-size:12px;color:#94a3b8;margin-bottom:8px;">Lv ${lv} / 3</div>
+          <button class="btn btn-sm" data-upg="${u.key}" ${canBuy ? "" : "disabled"}>${maxed ? t("maxed") : `${t("buy")} (💎 ${cost})`}</button>
+        </div>`;
+    }).join("");
+
+    const skinHtml = SKINS.map(s => {
+      const owned = save.ownedSkins.includes(s.id), eq = save.selectedSkin === s.id, canBuy = !owned && save.bank >= s.cost;
+      return `
+        <div class="item-card ${eq ? "active" : ""}">
+          <div style="font-weight:800;margin-bottom:4px;">
+            <span class="char-dot" style="background:${s.color || "#00f0ff"};"></span>${lang === "ar" ? s.nameAr : s.nameEn}
+          </div>
+          <button class="btn btn-sm" data-skin="${s.id}" ${(!owned && !canBuy) || eq ? "disabled" : ""}>
+            ${eq ? t("equipped") : (owned ? t("equip") : `${t("buy")} (💎 ${s.cost})`)}
+          </button>
+        </div>`;
+    }).join("");
+
+    overlayCard.innerHTML = `
+      <h2 style="margin:0 0 6px;">${t("shopTitle")}</h2>
+      <div class="pill" style="display:inline-flex;margin-bottom:8px;">${t("bank")}: 💎 ${save.bank}</div>
+      <div class="section-title">${t("upgrades")}</div><div class="grid">${upgHtml}</div>
+      <div class="section-title">${t("skins")}</div><div class="grid">${skinHtml}</div>
+      <div class="menu-actions"><button class="btn" id="mBack">${t("back")}</button></div>
+    `;
+    overlayCard.querySelectorAll("[data-upg]").forEach(btn => {
+      btn.onclick = () => {
+        const key = btn.dataset.upg, def = upgDefs.find(x => x.key === key), lv = save.upgrades[key] || 0;
+        if (lv < 3 && save.bank >= def.costs[lv]) {
+          save.bank -= def.costs[lv]; save.upgrades[key] = lv + 1;
+          unlockAchievement("upgrader"); writeSave(); SFX.switch(); showShop(); updateHUD();
+        }
+      };
+    });
+    overlayCard.querySelectorAll("[data-skin]").forEach(btn => {
+      btn.onclick = () => {
+        const sid = btn.dataset.skin, skin = SKINS.find(x => x.id === sid);
+        if (save.ownedSkins.includes(sid)) { save.selectedSkin = sid; writeSave(); SFX.crystal(); showShop(); }
+        else if (save.bank >= skin.cost) {
+          save.bank -= skin.cost; save.ownedSkins.push(sid); save.selectedSkin = sid;
+          unlockAchievement("upgrader"); writeSave(); SFX.switch(); showShop(); updateHUD();
+        }
+      };
+    });
+    document.getElementById("mBack").onclick = showMenu;
+  }
+
+  function showAchievements() {
+    screenMode = "ach"; overlay.classList.remove("hidden");
+    const cards = ACHIEVEMENTS.map(a => {
+      const done = save.achievements.includes(a.id);
+      return `
+        <div class="item-card ${done ? "active" : "locked"}">
+          <div style="font-weight:800;margin-bottom:4px;">${done ? "🏆" : "🔒"} ${lang === "ar" ? a.nameAr : a.nameEn}</div>
+          <div style="font-size:12px;color:#cbd5e1;">${lang === "ar" ? a.descAr : a.descEn}</div>
+        </div>`;
+    }).join("");
+    overlayCard.innerHTML = `<h2 style="margin:0 0 8px;">${t("achTitle")} (${save.achievements.length}/${ACHIEVEMENTS.length})</h2><div class="grid">${cards}</div><div class="menu-actions"><button class="btn" id="mBack">${t("back")}</button></div>`;
+    document.getElementById("mBack").onclick = showMenu;
+  }
+
+  function showStory() {
+    screenMode = "story"; overlay.classList.remove("hidden");
+    overlayCard.innerHTML = `<h2 style="margin:0 0 8px;">${t("storyTitle")}</h2>${t("storyBody")}<div class="menu-actions"><button class="btn" id="mBack">${t("back")}</button></div>`;
+    document.getElementById("mBack").onclick = showMenu;
+  }
+
+  function showHow() {
+    screenMode = "how"; overlay.classList.remove("hidden");
+    overlayCard.innerHTML = `<h2 style="margin:0 0 8px;">${t("howTitle")}</h2>${t("howBody")}<div class="menu-actions"><button class="btn" id="mBack">${t("back")}</button></div>`;
+    document.getElementById("mBack").onclick = showMenu;
+  }
+
+  function showWinOverlay(got, total, timeVal, dailyBonus) {
+    screenMode = "win"; overlay.classList.remove("hidden");
+    const isDaily = levelState.def.isDaily;
+    const hasNext = !isDaily && currentLevelIdx + 1 < LEVELS.length;
+    overlayCard.innerHTML = `
+      <h2 style="margin:0 0 8px;color:#00f0ff;">${t("winTitle")}</h2>
+      <p style="font-size:15px;color:#e2e8f0;">💎 ${got} / ${total} &nbsp;•&nbsp; ⏱ ${timeVal}s &nbsp;•&nbsp; 🏦 ${save.bank}</p>
+      ${isDaily ? `<p style="color:#34d399;font-weight:700;">${dailyBonus ? t("dailyDoneMsg") : t("dailyPlayedMsg")}</p>` : ""}
+      ${!isDaily && !hasNext ? `<p style="color:#a855f7;font-weight:700;">${t("allDone")}</p>` : ""}
+      <div class="menu-actions">
+        ${hasNext ? `<button class="btn btn-primary" id="wNext">${t("nextLevel")}</button>` : ""}
+        <button class="btn" id="wReplay">${t("replay")}</button>
+        <button class="btn" id="wShop">${t("shop")}</button>
+        <button class="btn" id="wMenu">${t("menu")}</button>
+      </div>
+    `;
+    if (hasNext) document.getElementById("wNext").onclick = () => loadLevel(currentLevelIdx + 1);
+    document.getElementById("wReplay").onclick = () => startLevelDef(levelState.def, currentLevelIdx);
+    document.getElementById("wShop").onclick = showShop;
+    document.getElementById("wMenu").onclick = showMenu;
+  }
+
+  window.addEventListener("keydown", (e) => {
+    keys[e.code] = true;
+    if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "Space"].includes(e.code)) e.preventDefault();
+    if (e.code === "ArrowUp") shiftGravity("up");
+    else if (e.code === "ArrowDown") shiftGravity("down");
+    else if (e.code === "ArrowLeft") shiftGravity("left");
+    else if (e.code === "ArrowRight") shiftGravity("right");
+    else if (e.code === "Space") doJump();
+    else if (e.code === "KeyE" || e.code === "ShiftLeft" || e.code === "ShiftRight") doAbility();
+    else if (e.code === "KeyR" && playing) startLevelDef(levelState.def, currentLevelIdx);
+    else if (e.code === "Escape" && playing) showMenu();
+  });
+  window.addEventListener("keyup", (e) => { keys[e.code] = false; });
+
+  document.querySelectorAll("[data-hold]").forEach(btn => {
+    const dir = btn.dataset.hold;
+    const on = (e) => { e.preventDefault(); ensureAudio(); holdInput[dir] = true; btn.classList.add("pressed"); };
+    const off = (e) => { e.preventDefault(); holdInput[dir] = false; btn.classList.remove("pressed"); };
+    btn.addEventListener("touchstart", on, { passive: false });
+    btn.addEventListener("touchend", off); btn.addEventListener("touchcancel", off);
+    btn.addEventListener("mousedown", on); btn.addEventListener("mouseup", off); btn.addEventListener("mouseleave", off);
+  });
+  document.querySelectorAll("[data-grav]").forEach(btn => {
+    const act = (e) => { e.preventDefault(); ensureAudio(); shiftGravity(btn.dataset.grav); };
+    btn.addEventListener("touchstart", act, { passive: false }); btn.addEventListener("mousedown", act);
+  });
+  document.querySelector('[data-tap="jump"]').addEventListener("touchstart", (e) => { e.preventDefault(); ensureAudio(); doJump(); }, { passive: false });
+  document.querySelector('[data-tap="jump"]').addEventListener("mousedown", () => { ensureAudio(); doJump(); });
+  document.querySelector('[data-tap="ability"]').addEventListener("touchstart", (e) => { e.preventDefault(); ensureAudio(); doAbility(); }, { passive: false });
+  document.querySelector('[data-tap="ability"]').addEventListener("mousedown", () => { ensureAudio(); doAbility(); });
+
+  document.getElementById("btnRestart").onclick = () => { if (levelState) startLevelDef(levelState.def, currentLevelIdx); };
+  document.getElementById("btnMenu").onclick = showMenu;
+  document.getElementById("btnTouchToggle").onclick = () => { showTouch = !showTouch; updateHUD(); };
+  document.getElementById("btnMusic").onclick = () => { musicOn = !musicOn; localStorage.setItem("gravity_music", musicOn ? "1" : "0"); ensureAudio(); updateHUD(); };
+  document.getElementById("btnSound").onclick = () => { muted = !muted; localStorage.setItem("gravity_muted", muted ? "1" : "0"); ensureAudio(); updateHUD(); };
+  document.getElementById("btnLang").onclick = () => {
+    lang = lang === "ar" ? "en" : "ar";
+    localStorage.setItem("gravity_lang", lang);
+    if (screenMode === "menu") showMenu();
+    else if (screenMode === "chars") showChars();
+    else if (screenMode === "worlds") showWorlds();
+    else if (screenMode === "shop") showShop();
+    else if (screenMode === "ach") showAchievements();
+    else if (screenMode === "story") showStory();
+    else if (screenMode === "how") showHow();
+    else updateHUD();
+  };
+
+  let lastTs = performance.now();
+  function loop(ts) {
+    const dt = Math.min(0.033, (ts - lastTs) / 1000);
+    lastTs = ts;
+    update(dt);
+    draw();
+    requestAnimationFrame(loop);
+  }
+
+  showMenu();
+  requestAnimationFrame(loop);
+})();
+</script>
+<script src="online.js"></script>
+</body>
+</html>
